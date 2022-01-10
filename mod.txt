@@ -1,0 +1,78 @@
+{
+	"name" : "KineticTrackers",
+	"description" : "Standalone buff/status tracker from KineticHUD",
+	"author" : "Offyerrocker",
+	"contact" : "Discord: Offyerrocker#3878",
+	"version" : "0.0.1",
+	"blt_version" : 2,
+	"priority" : 1,
+	"color" : "255 255 255",
+	"image" : "icon.png",
+	"hooks" : [
+		{
+			"hook_id" : "lib/managers/menumanager",
+			"script_path" : "hooks/menumanager.lua"
+		},
+		{
+			"hook_id" : "lib/setups/gamesetup",
+			"script_path" : "hooks/gamesetup.lua"
+		},
+		
+		
+		{
+			"hook_id" : "lib/managers/menumanager",
+			"script_path" : "classes/KineticTrackerCore.lua"
+		},
+		{
+			"hook_id" : "lib/managers/menumanager",
+			"script_path" : "classes/KineticTrackerHolder.lua"
+		},
+		{
+			"hook_id" : "lib/managers/menumanager",
+			"script_path" : "classes/KineticTrackerItem.lua"
+		},
+		{
+			"hook_id" : "lib/managers/menumanager",
+			"script_path" : "classes/QuickAnimate.lua"
+		},
+
+
+
+		{
+			"hook_id" : "lib/managers/playermanager",
+			"script_path" : "buff/playermanager.lua"
+		},
+		{
+			"DISABLEDhook_id" : "lib/units/beings/player/states/playertased",
+			"script_path" : "buff/playertased.lua"
+		},
+		{
+			"DISABLEDhook_id" : "lib/units/beings/player/playermovement",
+			"script_path" : "buff/playermovement.lua"
+		},
+		{
+			"DISABLEDhook_id" : "lib/units/beings/player/playerdamage",
+			"script_path" : "buff/playerdamage.lua"
+		},
+		{
+			"DISABLEDhook_id" : "lib/units/beings/player/playerinventory",
+			"script_path" : "buff/playerinventory.lua"
+		},
+		{
+			"DISABLEDhook_id" : "lib/managers/hud/hudteammate",
+			"script_path" : "buff/hudteammate.lua"
+		},
+		{
+			"DISABLEDhook_id" : "core/lib/managers/coreenvironmentcontrollermanager",
+			"script_path" : "buff/coreenvironmentcontrollermanager.lua"
+		},
+		{
+			"DISABLEDhook_id" : "lib/units/beings/player/states/playerstandard",
+			"script_path": "buff/playerstandard.lua"
+		},
+		{
+			"DISABLEDhook_id" : "lib/managers/hud/hudassaultcorner",
+			"script_path" : "buff/hudassaultcorner.lua"
+		}
+	]
+}
