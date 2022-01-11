@@ -311,7 +311,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				revived_damage_resist = "up_you_go",
 				increased_movement_speed = "running_from_death_aced",
 				swap_weapon_faster = "running_from_death_basic_swap_speed",
-				reload_weapon_faster = "running_from_death_basic_reload_speed"
+				reload_weapon_faster = "running_from_death_basic_reload_speed",
+				berserker_damage_multiplier = "swan_song"
 			}
 		},
 		cooldown_upgrade = {
@@ -597,7 +598,10 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "combat_medic",
 				tree = 1
 			},
-			display_format = "%0.2f"
+			modify_value_func = function(n)
+				return (1 - n) * 100
+			end,
+			display_format = "%i%%"
 		},
 		combat_medic_damage_mul = {
 			disabled = true, --actually disabled
@@ -933,7 +937,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "shock_and_awe",
 				tree = 3
 			},
-			display_format = "%0.2fx x%%i"
+			display_format = "%0.2fx"
 		},
 		
 	--ghost
@@ -1070,10 +1074,14 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "up_you_go",
 				tree = 5
 			},
-			display_format = ""
+			modify_value_func = function(n)
+				return (1 - n) * 100
+			end,
+			display_format = "%i%%"
 		},
 		swan_song = { --swan song: temporarily continue fighting after reaching 0 health
-			disabled = true,
+			disabled = false,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_perseverance_beta",
 			icon_data = {
@@ -1081,10 +1089,10 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "perseverance",
 				tree = 5
 			},
-			display_format = ""
+			display_format = "" --the value given is 1, as a damage multiplier, so don't bother showing it
 		},
 		messiah = { --messiah: kill an enemy to self-revive
-			disabled = true,
+			disabled = true, --not implemented; requires hooking to playermanager to get var ._messiah_charges
 			source = "skill",
 			text_id = "menu_pistol_beta_messiah",
 			icon_data = {
@@ -1095,7 +1103,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		bloodthirst = { --bloodthirst (basic: stacking melee damage bonus per kill; aced: reload speed bonus on melee kill)
-			disabled = true,
+			disabled = true, --not implemented; requires guessing coroutine playerbloodthirstbase
 			source = "skill",
 			text_id = "menu_bloodthirst",
 			icon_data = {
@@ -1106,7 +1114,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		counterstrike = { --counterstrike (counter melee/cloaker kick)
-			disabled = true,
+			disabled = true, --not implemented; requires upd_func to check playerstandard meleeing state
 			source = "skill",
 			text_id = "menu_drop_soap_beta",
 			icon_data = {
@@ -1117,7 +1125,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		berserker = { --berserker (damage bonus inverse to health ratio)
-			disabled = true,
+			disabled = true, --not implemented; requires upd_func
 			source = "skill",
 			text_id = "menu_wolverine_beta",
 			icon_data = {
