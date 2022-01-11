@@ -34,12 +34,39 @@
 	"menu_kitr_buff_category_perk_desc" : "Edit Perk Deck Options",
 	
 	"menu_kitr_buff_category_perkdeck_generic_desc" : "Edit the buffs from this perk deck",
+	"menu_kitr_buff_entry_generic_desc" : "Edit how this buff displays",
 	
-	"menu_kitr_set_buff_generic_time_display_mode_title" : "Set Time Display Mode",
-	"menu_kitr_set_buff_generic_time_display_mode_desc" : "Change how buff timers are displayed",
+	"menu_kitr_buff_option_generic_toggle_enabled_title" : "Enabled",
+	"menu_kitr_buff_option_generic_toggle_enabled_desc" : "If enabled, this buff can visually appear on your buff tracker.",
+	"menu_kitr_buff_option_generic_toggle_timer_title" : "Show Timer",
+	"menu_kitr_buff_option_generic_toggle_timer_desc" : "If enabled, this buff can display its timer.",
 	
-	"menu_kitr_time_display_seconds" : "Seconds Only",
-	"menu_kitr_time_display_minutes" : "Include Minutes",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_display_minutes_title" : "Set Timer Minutes/Seconds Display",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_display_minutes_desc" : "Change how buff timers are displayed",
+	
+	"menu_kitr_buff_option_generic_slider_timer_precision_title" : "Set Timer Minutes/Seconds Display",
+	"menu_kitr_buff_option_generic_slider_timer_precision_desc" : "Change how buff timers are displayed",
+	
+	"menu_kitr_timer_flashing_mode_below_threshold" : "When Below Threshold",
+	"menu_kitr_timer_flashing_mode_always" : "Always Flash",
+	"menu_kitr_timer_flashing_mode_never" : "Never Flash",
+	
+	"menu_kitr_timer_display_minutes" : "Seconds Only",
+	"menu_kitr_timer_display_seconds" : "Minutes and Seconds",
+	
+	"menu_kitr_buff_option_generic_multiplechoice_timer_flashing_mode_title" : "Timer Flashing",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_flashing_mode_desc" : "Change if/when the buff should flash.",
+	
+	"menu_kitr_buff_option_generic_multiplechoice_timer_flashing_speed_title" : "Buff Flashing Speed",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_flashing_speed_desc" : "Change how fast the buff flashes",
+	
+	"menu_kitr_buff_option_generic_multiplechoice_timer_flashing_threshold_title" : "Buff Flashing Threshold",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_flashing_threshold_desc" : "Set the timer threshold below which the buff will flash",
+	
+	
+	"menu_kitr_buff_option_generic_button_set_color_title" : "Customize Color...",
+	"menu_kitr_buff_option_generic_button_set_color_desc" : "Click to customize the buff color.",
+	
 	
 	"menu_modtemplate_title" : "Mod Template",
 	"menu_modtemplate_desc" : "Description of Mod Template",

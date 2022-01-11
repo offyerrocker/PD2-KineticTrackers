@@ -2,9 +2,21 @@
 	todo: 
 	
 	
+	
+	
+	
 	create individual entries per buff in each skilltree/perkdeck?
 	OR 
 	aggregate everything and slap a divider after each new one
+	
+	
+	buff_setting = {
+		enabled = true,
+		timer_enabled = true,
+		timer_minutes_display = 1,--1 = minutes, 2 = seconds
+		timer_precision = 2,
+		
+	}
 	
 	
 	
@@ -30,6 +42,7 @@
 				use threshold on/off
 				threshold (time left) 
 				color 
+			-master alpha?
 				
 		per buff:
 			-enabled
@@ -37,7 +50,6 @@
 			-threshold enabled
 			-min threshold (hide if not greater than this value)
 			
-			-master alpha
 			-text color (both)
 			-icon color
 			-bg color
@@ -58,7 +70,7 @@
 					menu_id = AdvancedCrosshair.crosshairs_menu_id,
 					priority = 7
 				})
-						
+				
 				MenuHelper:AddButton({
 					id = "id_ach_menu_crosshairs_categories_global_preview_bloom",
 					title = "menu_ach_preview_bloom_title",
@@ -122,11 +134,44 @@ KineticTrackerCore._options_path = ModPath .. "menu/options.json"
 KineticTrackerCore._default_localization_path = ModPath .. "loc/english.json"
 KineticTrackerCore._save_path = SavePath .. "KineticTrackers.json"
 
+KineticTrackerCore.default_palettes = {
+	"e32727",
+	"e38527",
+	"e3e327",
+	"e32785",
+	"e327e3",
+	
+	"d4e327",
+	"76e327",
+	"27e336",
+	"e39427",
+	"e33627",
+	
+	"30e327",
+	"27e37c",
+	"27e3da",
+	"8ee327",
+	"e3da27",
+	
+	"27b6e3",
+	"2758e3",
+	"5427e3",
+	"27e3b2",
+	"27e354",
+	
+	"8927e3",
+	"e327df",
+	"e32781",
+	"2b27e3",
+	"2781e3"
+}
 KineticTrackerCore.default_settings = {
 	logs_enabled = true,
 	toggle_setting = false,
 	slider_setting = 0,
-	multiplechoice_setting = 1
+	palettes = table.deep_map_copy(KineticTrackerCore.default_palettes),
+	multiplechoice_setting = 1,
+	buffs = {}
 }
 KineticTrackerCore.settings = table.deep_map_copy(KineticTrackerCore.default_settings)
 KineticTrackerCore.default_buff_settings = {
@@ -497,14 +542,14 @@ KineticTrackerCore.menu_data = {
 			subposition = "after"
 		}
 	},
-	skilltree_lookup = {
+	skilltree_lookup = { --ordered
 		"skilltree_mastermind",
 		"skilltree_enforcer",
 		"skilltree_technician",
 		"skilltree_ghost",
 		"skilltree_fugitive"
 	},
-	perkdeck_lookup = {
+	perkdeck_lookup = { --ordered
 		"perkdeck_crew_chief",
 		"perkdeck_muscle",
 		"perkdeck_armorer",
@@ -528,8 +573,7 @@ KineticTrackerCore.menu_data = {
 		"perkdeck_hacker",
 		"perkdeck_leech"
 	},
-	items = {
-		--unused
+	buffs_lookup = { --indexed by string buff_id
 	}
 }
 
@@ -619,6 +663,8 @@ function KineticTrackerCore:SaveSettings()
 end
 
 function KineticTrackerCore:LoadSettings()
+	--self:PopulateBuffSettings()
+
 	local file = io.open(self._save_path, "r")
 	if (file) then
 		for k, v in pairs(json.decode(file:read("*all"))) do
@@ -628,8 +674,6 @@ function KineticTrackerCore:LoadSettings()
 		self:SaveSettings()
 	end
 end
-
-
 
 
 function KineticTrackerCore:ResetSettings(category,skip_save)
@@ -646,8 +690,6 @@ function KineticTrackerCore:ResetSettings(category,skip_save)
 		self:SaveSettings()
 	end
 end
-
-
 
 
 -------------------------------------------------------------
@@ -744,7 +786,7 @@ function KineticTrackerCore:GetBuffDisplaySettings(id)
 		timer_enabled = true,
 		color = Color.white
 	} 
-	return buff_options[id] or default
+	return self.settings.buffs[id] or buff_options[id] or default
 end
 
 
@@ -2055,6 +2097,110 @@ function KineticTrackerCore:RemoveBuff(...)
 		self._holder:RemoveBuff(...)
 	end
 end
+
+
+
+--*************************************************--
+		--colorpicker/menu preview callbacks
+--************************************************--
+
+function KineticTrackerCore:GetColorPickerPalettes()
+	return self.settings.palettes
+end
+function KineticTrackerCore:GetColorPickerDefaultPalettes()
+	return self.default_palettes
+end
+
+function KineticTrackerCore:InitColorPicker()
+	if _G.ColorPicker then 
+		if not self._colorpicker then 
+			local palettes
+			local params = {
+				palettes = self:GetColorPickerPalettes(),
+				done_callback = callback(self,self,"callback_on_colorpicker_confirmed"),
+				changed_callback = callback(self,self,"callback_on_colorpicker_selected")
+			}
+			ColorPicker:new("kinetictracker",params,callback(self,self,"callback_on_colorpicker_created"))
+		end
+	end
+end
+
+function KineticTrackerCore:callback_on_colorpicker_created(colorpicker_menu)
+	self._colorpicker = colorpicker_menu
+end
+
+function KineticTrackerCore:callback_on_colorpicker_selected(colorpicker_menu)
+	--edit buff preview
+end
+
+function KineticTrackerCore:callback_on_colorpicker_confirmed(colorpicker_menu)
+	--edit buff preview, save settings
+end
+
+function KineticTrackerCore:callback_on_colorpicker_save_palettes(palettes)
+	for i,col_str in pairs(palettes) do 
+		self.settings.palettes[i] = col_str
+	end
+	self:SaveSettings()
+end
+
+
+function KineticTrackerCore:CreateBuffPreview(buff_id)
+	self:_CreateBuffPreview(self.tweak_data[buff_id])
+end
+
+function KineticTrackerCore:_CreateBuffPreview(buff_data)
+	--todo
+end
+
+function KineticTrackerCore:RemoveAllBuffPreviews()
+	--todo
+end
+
+function KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
+--[[
+		local function confirm_reset()
+			for _,key in pairs(AdvancedCrosshair.setting_categories.palettes) do 
+				AdvancedCrosshair.settings[key] = AdvancedCrosshair.default_settings[key]
+			end
+			QuickMenu:new(
+				managers.localization:text("menu_ach_reset_palettes_prompt_success_title"),managers.localization:text("menu_ach_reset_palettes_prompt_success_desc"),{
+					{
+						text = managers.localization:text("menu_ach_prompt_ok"),
+						is_cancel_button = true,
+						is_focused_button = true
+					}
+				}
+			,true)
+		end
+		AdvancedCrosshair:Save()
+		QuickMenu:new(
+			managers.localization:text("menu_ach_reset_palettes_prompt_confirm_title"),managers.localization:text("menu_ach_reset_palettes_prompt_confirm_desc"),{
+				{
+					text = managers.localization:text("menu_ach_prompt_confirm"),
+					callback = confirm_reset
+				},
+				{
+					text = managers.localization:text("menu_ach_prompt_cancel"),
+					is_focused_button = true,
+					is_cancel_button = true
+				}
+			}
+		,true)
+
+--]]
+	local title = managers.localization:text("menu_kitr_missing_dependency_colorpicker_title")
+	local desc = managers.localization:text("menu_kitr_missing_dependency_colorpicker_desc")
+	QuickMenu:new(title,desc,
+		{
+			{
+				text = managers.localization:text("menu_ok")
+			}
+		},
+		true
+	)
+end
+
 
 
 
