@@ -1,5 +1,108 @@
 --[[
 	todo: 
+	
+	
+	create individual entries per buff in each skilltree/perkdeck?
+	OR 
+	aggregate everything and slap a divider after each new one
+	
+	
+	
+	buff customization menus:
+		global:
+			time format:
+				display :
+					A) minutes:seconds (1:30)
+					B) seconds (90)
+				float precision (xx.yy or just xx)
+				append seconds "s"
+			value format?
+				stack style:
+					A) Burdened by Riches x2
+				mul style:
+					A) Berserker x0.15
+					B) Berserker x1.15
+					C) Berserker +0.15
+					D) Berserker +15%
+					E) Berserker 15%
+			flashing:
+				enabled on/off
+				use threshold on/off
+				threshold (time left) 
+				color 
+				
+		per buff:
+			-enabled
+			-timer enabled
+			-threshold enabled
+			-min threshold (hide if not greater than this value)
+			
+			-master alpha
+			-text color (both)
+			-icon color
+			-bg color
+			-bg alpha
+	
+	
+	
+				MenuHelper:AddMultipleChoice({
+					id = "ach_crosshairs_general_outofrange_mode",
+					title = "menu_ach_crosshairs_general_outofrange_mode_title",
+					desc = "menu_ach_crosshairs_general_outofrange_mode_desc",
+					callback = "callback_ach_crosshairs_general_set_outofrange_mode",
+					items = {
+						"menu_ach_outofrange_disabled",
+						"menu_ach_outofrange_size"
+					},
+					value = AdvancedCrosshair.settings.crosshair_outofrange_mode,
+					menu_id = AdvancedCrosshair.crosshairs_menu_id,
+					priority = 7
+				})
+						
+				MenuHelper:AddButton({
+					id = "id_ach_menu_crosshairs_categories_global_preview_bloom",
+					title = "menu_ach_preview_bloom_title",
+					desc = "menu_ach_preview_bloom_desc",
+					callback = "callback_ach_crosshairs_categories_global_preview_bloom",
+					menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
+					priority = 1
+				})
+				
+				MenuHelper:AddSlider({
+					id = "ach_hitsounds_set_hit_headshot_volume",
+					title = "menu_ach_hitsounds_set_hit_headshot_volume_title",
+					desc = "menu_ach_hitsounds_set_hit_headshot_volume_desc",
+					callback = "callback_ach_hitsounds_set_hit_headshot_volume",
+					value = AdvancedCrosshair.settings.hitsound_hit_headshot_volume,
+					min = 0,
+					max = 1,
+					step = 0.1,
+					show_value = true,
+					menu_id = AdvancedCrosshair.hitsounds_menu_id,
+					priority = 19
+				})
+					
+				
+				MenuHelper:AddDivider({
+					id = "ach_crosshairs_general_divider_1",
+					size = 16,
+					menu_id = AdvancedCrosshair.crosshairs_menu_id,
+					priority = 9
+				})
+				MenuHelper:AddToggle({
+					id = "ach_crosshairs_general_master_enable",
+					title = "menu_ach_crosshairs_general_master_enable_title",
+					desc = "menu_ach_crosshairs_general_master_enable_desc",
+					callback = "callback_ach_crosshairs_general_master_enable",
+					value = AdvancedCrosshair.settings.crosshair_enabled,
+					menu_id = AdvancedCrosshair.crosshairs_menu_id,
+					priority = 8
+				})
+	
+	
+	special case: grinder stacks
+	special case: biker prospect stacks
+	
 	 use user's per-buff show-timer setting and time format string
 	
 	separate entries for combat_medic property and timed buff to avoid possible conflicts (in practice it's fine but i'd prefer it to be more waterproof)
@@ -8,7 +111,6 @@
 		this allows buffs to still be accurate if one was present while being enabled/disabled
 	
 	separate equipment trackers? (ecm timers, sentry ammo counts, num tripmines out)
-	buff customization menus
 	
 --]]
 
@@ -30,6 +132,416 @@ KineticTrackerCore.settings = table.deep_map_copy(KineticTrackerCore.default_set
 KineticTrackerCore.default_buff_settings = {
 	--not used
 }
+
+
+-------------------------------------------------------------
+--********************* Menu Data *********************--
+-------------------------------------------------------------
+
+KineticTrackerCore.menu_data = {
+	menus = {
+		main = {
+			skip_add_menu_item = true,
+			id = "menu_kitr_main",
+			title = "menu_kitr_main_menu_title",
+			desc = "menu_kitr_main_menu_desc",
+			parent = "blt_options",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = nil,
+			subposition = nil
+		},
+		buffs = {
+			id = "menu_kitr_buffs",
+			title = "menu_kitr_buffs_title",
+			desc = "menu_kitr_buffs_desc",
+			parent = "menu_kitr_main",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = nil,
+			subposition = nil
+		},
+		general = {
+			id = "menu_kitr_buff_category_general",
+			title = "menu_kitr_buff_category_general_title",
+			desc = "menu_kitr_buff_category_general_desc",
+			parent = "menu_kitr_buffs",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = nil,
+			subposition = nil
+		},
+		skill = {
+			id = "menu_kitr_buff_category_skill",
+			title = "menu_kitr_buff_category_skill_title",
+			desc = "menu_kitr_buff_category_skill_desc",
+			parent = "menu_kitr_buffs",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = nil,
+			subposition = nil
+		},
+	--skilltree menus
+		skilltree_mastermind = {
+			id = "menu_kitr_buff_category_skilltree_mastermind",
+			title = "menu_kitr_buff_category_skilltree_mastermind_title",
+			desc = "menu_kitr_buff_category_skilltree_mastermind_desc",
+			parent = "menu_kitr_buff_category_skill",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = nil,
+			subposition = nil
+		},
+		skilltree_enforcer = {
+			id = "menu_kitr_buff_category_skilltree_enforcer",
+			title = "menu_kitr_buff_category_skilltree_enforcer_title",
+			desc = "menu_kitr_buff_category_skilltree_enforcer_desc",
+			parent = "menu_kitr_buff_category_skill",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "skilltree_mastermind",
+			subposition = "after"
+		},
+		skilltree_technician = {
+			id = "menu_kitr_buff_category_skilltree_technician",
+			title = "menu_kitr_buff_category_skilltree_technician_title",
+			desc = "menu_kitr_buff_category_skilltree_technician_desc",
+			parent = "menu_kitr_buff_category_skill",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "skilltree_enforcer",
+			subposition = "after"
+		},
+		skilltree_ghost = {
+			id = "menu_kitr_buff_category_skilltree_ghost",
+			title = "menu_kitr_buff_category_skilltree_ghost_title",
+			desc = "menu_kitr_buff_category_skilltree_ghost_desc",
+			parent = "menu_kitr_buff_category_skill",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "skilltree_technician",
+			subposition = "after"
+		},
+		skilltree_fugitive = {
+			id = "menu_kitr_buff_category_skilltree_fugitive",
+			title = "menu_kitr_buff_category_skilltree_fugitive_title",
+			desc = "menu_kitr_buff_category_skilltree_fugitive_desc",
+			parent = "menu_kitr_buff_category_skill",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "skilltree_ghost",
+			subposition = "after"
+		},
+		perk = {
+			id = "menu_kitr_buff_category_perk",
+			title = "menu_kitr_buff_category_perk_title",
+			desc = "menu_kitr_buff_category_perk_desc",
+			parent = "menu_kitr_buffs",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = nil,
+			subposition = nil
+		},
+		--consolidate all these into the perks menu
+		perkdeck_crew_chief = {
+			id = "menu_kitr_buff_category_perkdeck_crew_chief",
+			title = "menu_st_spec_1",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = nil,
+			subposition = nil
+		},
+		perkdeck_muscle = {
+			id = "menu_kitr_buff_category_perkdeck_muscle",
+			title = "menu_st_spec_2",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_crew_chief",
+			subposition = "after"
+		},
+		perkdeck_armorer = {
+			id = "menu_kitr_buff_category_perkdeck_armorer",
+			title = "menu_st_spec_3",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_muscle",
+			subposition = "after"
+		},
+		perkdeck_rogue = {
+			id = "menu_kitr_buff_category_perkdeck_rogue",
+			title = "menu_st_spec_4",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_armorer",
+			subposition = "after"
+		},
+		perkdeck_hitman = {
+			id = "menu_kitr_buff_category_perkdeck_hitman",
+			title = "menu_st_spec_5",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_rogue",
+			subposition = "after"
+		}, 
+		perkdeck_crook = { --doesn't have any perks to change
+			disabled = true,
+			id = "menu_kitr_buff_category_perkdeck_crook",
+			title = "menu_st_spec_6",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_crook",
+			subposition = "after"
+		},
+		perkdeck_burglar = {
+			id = "menu_kitr_buff_category_perkdeck_burglar",
+			title = "menu_st_spec_7",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_hitman",
+			subposition = "after"
+		},
+		perkdeck_infiltrator = {
+			id = "menu_kitr_buff_category_perkdeck_infiltrator",
+			title = "menu_st_spec_8",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_burglar",
+			subposition = "after"
+		},
+		perkdeck_sociopath = {
+			id = "menu_kitr_buff_category_perkdeck_sociopath",
+			title = "menu_st_spec_9",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_infiltrator",
+			subposition = "after"
+		},
+		perkdeck_gambler = {
+			id = "menu_kitr_buff_category_perkdeck_gambler",
+			title = "menu_st_spec_10",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_sociopath",
+			subposition = "after"
+		},
+		perkdeck_grinder = {
+			id = "menu_kitr_buff_category_perkdeck_grinder",
+			title = "menu_st_spec_11",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_gambler",
+			subposition = "after"
+		},
+		perkdeck_yakuza = {
+			id = "menu_kitr_buff_category_perkdeck_yakuza",
+			title = "menu_st_spec_12",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_grinder",
+			subposition = "after"
+		},
+		perkdeck_ex_president = {
+			id = "menu_kitr_buff_category_perkdeck_ex_president",
+			title = "menu_st_spec_13",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_yakuza",
+			subposition = "after"
+		},
+		perkdeck_maniac = {
+			id = "menu_kitr_buff_category_perkdeck_maniac",
+			title = "menu_st_spec_14",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_ex_president",
+			subposition = "after"
+		},
+		perkdeck_anarchist = {
+			id = "menu_kitr_buff_category_perkdeck_anarchist",
+			title = "menu_st_spec_15",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_maniac",
+			subposition = "after"
+		},
+		perkdeck_biker = {
+			id = "menu_kitr_buff_category_perkdeck_biker",
+			title = "menu_st_spec_16",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_anarchist",
+			subposition = "after"
+		},
+		perkdeck_kingpin = {
+			id = "menu_kitr_buff_category_perkdeck_kingpin",
+			title = "menu_st_spec_17",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_biker",
+			subposition = "after"
+		},
+		perkdeck_sicario = {
+			id = "menu_kitr_buff_category_perkdeck_sicario",
+			title = "menu_st_spec_18",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_kingpin",
+			subposition = "after"
+		},
+		perkdeck_stoic = {
+			id = "menu_kitr_buff_category_perkdeck_stoic",
+			title = "menu_st_spec_19",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_sicario",
+			subposition = "after"
+		},
+		perkdeck_tag_team = {
+			id = "menu_kitr_buff_category_perkdeck_tag_team",
+			title = "menu_st_spec_20",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_stoic",
+			subposition = "after"
+		},
+		perkdeck_hacker = {
+			id = "menu_kitr_buff_category_perkdeck_hacker",
+			title = "menu_st_spec_21",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_tag_team",
+			subposition = "after"
+		},
+		perkdeck_leech = {
+			id = "menu_kitr_buff_category_perkdeck_leech",
+			title = "menu_st_spec_22",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_hacker",
+			subposition = "after"
+		}
+	},
+	skilltree_lookup = {
+		"skilltree_mastermind",
+		"skilltree_enforcer",
+		"skilltree_technician",
+		"skilltree_ghost",
+		"skilltree_fugitive"
+	},
+	perkdeck_lookup = {
+		"perkdeck_crew_chief",
+		"perkdeck_muscle",
+		"perkdeck_armorer",
+		"perkdeck_rogue",
+		"perkdeck_hitman",
+		"perkdeck_crook",
+		"perkdeck_burglar",
+		"perkdeck_infiltrator",
+		"perkdeck_sociopath",
+		"perkdeck_gambler",
+		"perkdeck_grinder",
+		"perkdeck_yakuza",
+		"perkdeck_ex_president",
+		"perkdeck_maniac",
+		"perkdeck_anarchist",
+		"perkdeck_biker",
+		"perkdeck_kingpin",
+		"perkdeck_sicario",
+		"perkdeck_stoic",
+		"perkdeck_tag_team",
+		"perkdeck_hacker",
+		"perkdeck_leech"
+	},
+	items = {
+		--unused
+	}
+}
+
+--[[
+for i,v in ipairs(tweak_data.skilltree.specializations) do 
+	if v.name_id then 
+		Log(i .. " perk_" .. string.lower(managers.localization:text(v.name_id)))
+	end
+end
+--]]
+
+
 
 
 -------------------------------------------------------------
@@ -258,8 +770,6 @@ function KineticTrackerCore:AddGeneralBuffs()
 end
 
 function KineticTrackerCore:InitHolder()
-	self:InitBuffTweakData()
-	
 	self._animator = QuickAnimate:new("kinetictracker_animator",{parent = KineticTrackerCore,updater_type = QuickAnimate.updater_types.HUDManager,paused = false})
 
 	self._ws = self._ws or managers.gui_data:create_fullscreen_workspace()
@@ -1137,10 +1647,10 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 --perkdecks
 
-	--crewchief
+	--crew chief
 		marathon_man = { --marathon man (damage reduction in medium range of enemies)
 			disabled = true,
-			source = "skill",
+			source = "perk",
 			text_id = "menu_deck1_1",
 			icon_data = {
 				source = "perk",
@@ -1151,7 +1661,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 		hostage_situation = { --hostage situation (damage resistance per hostage)
 			disabled = true,
-			source = "skill",
+			source = "perk",
 			text_id = "menu_deck1_5",
 			icon_data = {
 				source = "perk",
@@ -1376,10 +1886,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		excitement = { --excitement (hysteria stacks)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck14_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 14,
 				card = 1
 			},
@@ -1566,3 +2075,8 @@ end
 function KineticTrackerCore:is_animating(object,...)
 	return self._animator:is_animating(object,...)
 end
+
+
+
+
+KineticTrackerCore:InitBuffTweakData()

@@ -1,0 +1,9 @@
+{
+	"menu_id" : "menu_kitr_main",
+	"parent_menu_id" : "blt_options",
+	"title" : "menu_kitr_main_menu_title",
+	"description" : "menu_kitr_main_menu_desc",
+	"DISABLED_back_callback" : "callback_modtemplate_back",
+	"items" : [
+	]
+}
