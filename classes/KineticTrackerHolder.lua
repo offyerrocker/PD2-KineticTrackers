@@ -52,12 +52,14 @@ function KineticTrackerHolder:SetBuff(id,params,buff_data)
 end
 
 function KineticTrackerHolder:AddBuff(id,params)
-	local sort_by_priority = true
+	local sort_by_priority = false
 	
 	local buff_tweakdata = id and self.tweak_data[id]
-	if buff_tweakdata.disabled then 
+	local buff_display_setting = self._core:GetBuffDisplaySettings(id)
+--	if buff_tweakdata.disabled or buff_display_setting.disabled then 
+	if buff_display_setting.disabled then 
 		--todo replace with user setting buff disabled
---		return
+		return
 	end
 	local existing_buff_data = self:GetBuff(id)
 	
@@ -72,27 +74,38 @@ function KineticTrackerHolder:AddBuff(id,params)
 	if sort_by_priority then 
 		priority = buff_tweakdata.priority or 1
 	else
-		priority = 1
+		priority = #self._buffs + 1
 	end
+	local color = buff_display_setting.color
 	local show_timer = buff_tweakdata.show_timer
 	local primary_label = ""
 	local secondary_label = ""
 	local secondary_label_format = "%0.1f"
 	local primary_label_format = buff_tweakdata.display_format or ""
+	local buff_label = managers.localization:text(buff_tweakdata.text_id)
 	if show_timer and params.end_t then 
 		local t = Application:time()
 		secondary_label = string.format(secondary_label_format,params.end_t - t)
 	end
-	primary_label = params.value and string.format(primary_label_format,params.value) or ""
+	local value = params.value
+	
+	if value then
+		if buff_tweakdata.modify_value_func then 
+			value = buff_tweakdata.modify_value_func(value)
+		end
+		primary_label = string.format(primary_label_format,value) or primary_label
+	end
 	
 --	local buff_panel = self:CreateBuff(id,buff_tweakdata)
+	
 	local new_item = KineticTrackerItem:new({
 		id = id,
+		buff_label = buff_label,
 		parent_panel = self._panel,
 		icon_data = buff_tweakdata.icon_data,
 		primary_label = primary_label,
 		secondary_label = secondary_label,
-		color = Color.white
+		color = color
 	})
 	
 	--do animate buff name w/indicator
@@ -107,7 +120,8 @@ function KineticTrackerHolder:AddBuff(id,params)
 		duration = params.duration,
 		show_timer = show_timer,
 		item = new_item,
-		upd_func = buff_tweakdata.upd_func
+		upd_func = buff_tweakdata.upd_func,
+		modify_value_func = buff_tweakdata.modify_value_func
 	}
 	
 	table.insert(self._buffs,priority,buff_data)
@@ -123,7 +137,7 @@ function KineticTrackerHolder:RemoveBuff(id)
 end
 --]]
 
-function KineticTrackerHolder:_RemoveBuff(i)
+function KineticTrackerHolder:_RemoveBuff(id)
 	for i,buff_data in pairs(self._buffs) do 
 		if buff_data.id == id then 
 			return table.remove(self._buffs,i)
@@ -132,11 +146,12 @@ function KineticTrackerHolder:_RemoveBuff(i)
 end
 
 function KineticTrackerHolder:RemoveBuff(id)
-	local buff_data = self:_RemoveBuff(i)
-	local item = buff_data.item
-	item:Remove()
+	local buff_data = self:_RemoveBuff(id)
+	if buff_data then 
+		local item = buff_data.item
+		item:Remove()
+	end
 end
-
 
 function KineticTrackerHolder:GetBuff(id)
 	for i,buff_data in pairs(self._buffs) do 
@@ -187,7 +202,11 @@ function KineticTrackerHolder:Update(t,dt)
 						below_threshold = true
 					end
 				end
+				
 				if value then 
+					if buff_data.modify_value_func then 
+						value = buff_data.modify_value_func(value)
+					end
 					item:SetPrimaryText(string.format(buff_data.primary_label_format,value))
 				else
 					item:SetPrimaryText("")

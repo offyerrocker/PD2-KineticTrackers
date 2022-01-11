@@ -8,7 +8,9 @@
 	"menu_kitr_buff_damage_absorption_title" : "Damage Absorption",
 	"menu_kitr_buff_weapon_damage_multiplier" : "Weapon Damage",
 	"menu_kitr_buff_weapon_reload_speed_multiplier" : "Weapon Reload Speed",
-	
+	"menu_kitr_buff_weapon_accuracy_multiplier" : "Weapon Accuracy",
+	"menu_kitr_buff_melee_damage_multiplier" : "Melee Damage",
+	"menu_kitr_buff_generic_cooldown_suffix" : "Cooldown",
 	
 	
 	

@@ -21,14 +21,13 @@ function KineticTrackerItem.ConstrainedScaleDown(w1,h1,w2,h2,can_grow)
 end
 
 
-
+KineticTrackerItem._TEXT_BG_MARGIN = 4
 
 
 function KineticTrackerItem:init(params)
 	local id = params.id
 	local icon_data = params.icon_data
-	local margin = 4
-	self._text_bg_margin = margin
+	local margin = KineticTrackerItem._TEXT_BG_MARGIN
 	local mode = "normal"
 	
 	local primary_color,secondary_color
@@ -93,8 +92,24 @@ function KineticTrackerItem:init(params)
 	local icon_w,icon_h = icon:size()
 	icon:set_size(KineticTrackerItem.ConstrainedScaleDown(icon_w,icon_h,max_w,max_h,false))
 	
-	local text_1,text_2
+	local text_1,text_2,buff_name
+	local buff_label = params.buff_label
+
 	if mode == "compact" then
+		local buff_name_text = panel:text({
+			name = "buff_name_text",
+			text = buff_label,
+			font = font_1,
+			font_size = font_size_1,
+			align = "left",
+			vertical = "top",
+			color = secondary_color,
+			blend_mode = "normal",
+			alpha = 1,	
+			visible = true,
+			layer = 2
+		})
+		buff_name = buff_name_text
 		
 		local top_text = panel:text({
 			name = "top_text",
@@ -142,13 +157,30 @@ function KineticTrackerItem:init(params)
 		})
 		text_2 = bottom_text
 	else
+	--destiny style
+		local buff_name_text = panel:text({
+			name = "buff_name_text",
+			text = buff_label,
+			font = font_1,
+			font_size = font_size_1,
+			x = icon:right() + 2,
+			align = "left",
+			vertical = "center",
+			color = secondary_color,
+			blend_mode = "normal",
+			alpha = 1,
+			visible = true,
+			layer = 2
+		})
+		buff_name = buff_name_text
+		
 		local icon_text = panel:text({
 			name = "icon_text",
 			text = params.secondary_label,
 			font = font_2,
 			font_size = font_size_2,
 			align = "center",
-			vertical = "top",
+			vertical = "center",
 			color = secondary_color,
 			blend_mode = "normal",
 			alpha = 1,
@@ -179,7 +211,7 @@ function KineticTrackerItem:init(params)
 			font = font_1,
 			font_size = font_size_1,
 			align = "right",
-			vertical = "top",
+			vertical = "center",
 			color = secondary_color,
 			blend_mode = "normal",
 			alpha = 1,
@@ -190,6 +222,8 @@ function KineticTrackerItem:init(params)
 	end
 	self._primary_text = text_1
 	self._secondary_text = text_2
+	self._name_text = buff_name
+	
 	self._text_bg_rect = text_bg_rect
 		
 	local bottom_text_params = params.bottom_text_params
@@ -198,10 +232,10 @@ end
 
 function KineticTrackerItem:SetPrimaryText(text)
 	self._primary_text:set_text(text)
-	local margin = self._text_bg_margin
+	local margin = self._TEXT_BG_MARGIN
 	local _x,_y,_w,_h = self._primary_text:text_rect()
 	self._text_bg_rect:set_size(_w + margin + margin,_h + margin + margin)
-	self._text_bg_rect:set_position(_x - margin,_y - margin)
+	self._text_bg_rect:set_world_position(_x - margin,_y - margin)
 end
 
 function KineticTrackerItem:SetSecondaryText(text)

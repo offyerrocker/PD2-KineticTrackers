@@ -63,24 +63,34 @@ Hooks:PostHook(PlayerManager,"add_to_temporary_property","noblehud_add_temporary
 		KineticTrackerCore:Log("PlayerManager:add_to_temporary_property(" .. KineticTrackerCore.concat_tbl_with_keys({name=name,time=time,value=value},",","=") .. ")",{color=Color.yellow})
 	end
 end)
+
 Hooks:PostHook(PlayerManager,"aquire_cooldown_upgrade","noblehud_aquire_cooldown_upgrade",function(self,upgrade)
 --upgrade is a table. whoops.
 	local name = upgrade.upgrade
 	local upgrade_value = self:upgrade_value(upgrade.category,name)
 	
-	KineticTrackerCore:Log("PlayerManager:aquire_cooldown_upgrade(upgrade=" .. tostring(upgrade) .. ")")
+	KineticTrackerCore:Log("PlayerManager:aquire_cooldown_upgrade() upgrade = " .. tostring(name) .. ", category = " .. tostring(upgrade.category) .. ", value = " .. tostring(upgrade_value))
 end)
 
 Hooks:PostHook(PlayerManager,"disable_cooldown_upgrade","noblehud_disable_cooldown_upgrade",function(self,category,upgrade)
 	local upgrade_value = self:upgrade_value(category, upgrade)
-	KineticTrackerCore:Log("PlayerManager:disable_cooldown_upgrade(" .. KineticTrackerCore.concat_tbl_with_keys({category=category,upgrade=upgrade},",","=") .. "), upgrade_value=" .. tostring(upgrade_value))
 	if upgrade_value == 0 then
 		return
 	end
 
-	local t = upgrade_value[2]
-
---	KineticTrackerCore:AddBuff(upgrade,{duration = t})
+	
+	local value = upgrade_value[1]
+	local duration = upgrade_value[2]
+	
+	local buff_id = KineticTrackerCore:GetBuffIdFromCooldownUpgrade(category,upgrade)
+	if buff_id then 
+		KineticTrackerCore:AddBuff(buff_id,{value = value,end_t = Application:time() + duration})
+	else
+		KineticTrackerCore:Log("PlayerManager:disable_cooldown_upgrade(" .. KineticTrackerCore.concat_tbl_with_keys({category=category,upgrade=upgrade},",","=") .. "), value=" .. tostring(value) .. ", duration = " .. tostring(duration))
+		if type(upgrade_value) == "table" then 
+	--		logall(upgrade_value)
+		end
+	end
 end)
 
 do return end
