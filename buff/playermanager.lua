@@ -1,11 +1,15 @@
 	
+Hooks:PostHook(PlayerManager,"check_skills","playermanager_checkskills_kinetictrackers",function(self,...)
+	Hooks:Call("PlayerManager_OnCheckSkills",self,...)
+end)
 
 Hooks:PostHook(PlayerManager,"set_property","noblehud_set_property",function(self,name,value)
 	local buff_id = KineticTrackerCore:GetBuffIdFromProperty(name)
 	if buff_id then 
 		KineticTrackerCore:AddBuff(buff_id,{value=value})
+	else
+		KineticTrackerCore:Log("PlayerManager:set_property(" .. tostring(name) .. "," .. tostring(value) .. ")",{color=Color.yellow})
 	end
-	KineticTrackerCore:Log("PlayerManager:set_property(" .. tostring(name) .. "," .. tostring(value) .. ")",{color=Color.yellow})
 end)
 
 
@@ -13,32 +17,41 @@ Hooks:PostHook(PlayerManager,"remove_property","noblehud_remove_property",functi
 	local buff_id = KineticTrackerCore:GetBuffIdFromProperty(name)
 	if buff_id then 
 		KineticTrackerCore:RemoveBuff(buff_id)
+	else
+		KineticTrackerCore:Log("PlayerManager:remove_property(" .. tostring(name) .. ")",{color=Color.yellow})
 	end
-	KineticTrackerCore:Log("PlayerManager:remove_property(" .. tostring(name) .. ")",{color=Color.yellow})
 end)
 
 Hooks:PostHook(PlayerManager,"activate_temporary_upgrade","noblehud_activate_temporary_upgrade",function(self,category, upgrade)
-	
 	local buff_id = KineticTrackerCore:GetBuffIdFromTemporaryUpgrade(category,upgrade)
+	local end_t,value
 	if buff_id then 
-		local end_t = self._temporary_upgrades[category] and self._temporary_upgrades[category][upgrade] and self._temporary_upgrades[category][upgrade].expire_time
-		KineticTrackerCore:AddBuff(buff_id,{end_t = end_t}) --i'd have to re-calculate stuff or overwrite the function to use duration instead of end_t. i'd rather risk having desynced end times
+		end_t = self:get_activate_temporary_expire_time(category,upgrade)
+		value = self:temporary_upgrade_value(category,upgrade)
+		KineticTrackerCore:AddBuff(buff_id,{end_t = end_t,value = value}) --i'd have to re-calculate stuff or overwrite the function to use duration instead of end_t. i'd rather risk having desynced end times
+	else
+		KineticTrackerCore:Log("PlayerManager:activate_temporary_upgrade(" .. KineticTrackerCore.concat_tbl_with_keys({category=category,upgrade=upgrade,end_t=end_t,value=value},",","=") .. ")",{color=Color.yellow})
 	end
 end)
 
 Hooks:PostHook(PlayerManager,"activate_temporary_property","noblehud_activate_temporary_property",function(self,name, time, value)
-	KineticTrackerCore:Log("PlayerManager:activate_temporary_property(" .. KineticTrackerCore.concat_tbl_with_keys({name=name,time=time,value=value},",","=") .. ")",{color=Color.yellow})
 	local buff_id = KineticTrackerCore:GetBuffIdFromTemporaryProperty(name)
 	if buff_id then 
 		KineticTrackerCore:AddBuff(buff_id,{duration=time,value=value})
+	else
+		KineticTrackerCore:Log("PlayerManager:activate_temporary_property(" .. KineticTrackerCore.concat_tbl_with_keys({name=name,time=time,value=value},",","=") .. ")",{color=Color.yellow})
 	end
 end)
 
 Hooks:PostHook(PlayerManager,"activate_temporary_upgrade_by_level","noblehud_activate_temporary_upgrade_by_level",function(self,category, upgrade, level)
 	local buff_id = KineticTrackerCore:GetBuffIdFromTemporaryUpgrade(category,upgrade)
+	local end_t,value
 	if buff_id then 
-		local t = self._temporary_upgrades[category] and self._temporary_upgrades[category][upgrade] and self._temporary_upgrades[category][upgrade].expire_time
-		KineticTrackerCore:AddBuff(buff_id,{end_t = t})
+		end_t = self:get_activate_temporary_expire_time(category,upgrade)
+		value = self:temporary_upgrade_value(category,upgrade,0)
+		KineticTrackerCore:AddBuff(buff_id,{end_t = end_t,value = value})
+	else
+		KineticTrackerCore:Log("PlayerManager:activate_temporary_upgrade_by_level(" .. KineticTrackerCore.concat_tbl_with_keys({category=category,upgrade=upgrade,level=level,end_t=end_t,value=value},",","=") .. ")",{color=Color.yellow})
 	end
 end)
 
@@ -46,19 +59,21 @@ Hooks:PostHook(PlayerManager,"add_to_temporary_property","noblehud_add_temporary
 	local buff_id = KineticTrackerCore:GetBuffIdFromTemporaryProperty(name)
 	if buff_id then 
 		KineticTrackerCore:AddBuff(buff_id,{duration = time,value=value})
+	else
+		KineticTrackerCore:Log("PlayerManager:add_to_temporary_property(" .. KineticTrackerCore.concat_tbl_with_keys({name=name,time=time,value=value},",","=") .. ")",{color=Color.yellow})
 	end
 end)
 Hooks:PostHook(PlayerManager,"aquire_cooldown_upgrade","noblehud_aquire_cooldown_upgrade",function(self,upgrade)
 --upgrade is a table. whoops.
 	local name = upgrade.upgrade
 	local upgrade_value = self:upgrade_value(upgrade.category,name)
-	KineticTrackerCore:Log("PlayerManager:aquire_cooldown_upgrade(" .. NobleHUD.table_concat(upgrade,",","=") .. ")")
---	NobleHUD:AddBuff(name,{duration = time}) --i'd have to re-calculate stuff or overwrite the function to use duration instead of end_t. i'd rather risk having desynced end times
+	
+	KineticTrackerCore:Log("PlayerManager:aquire_cooldown_upgrade(upgrade=" .. tostring(upgrade) .. ")")
 end)
 
 Hooks:PostHook(PlayerManager,"disable_cooldown_upgrade","noblehud_disable_cooldown_upgrade",function(self,category,upgrade)
 	local upgrade_value = self:upgrade_value(category, upgrade)
-
+	KineticTrackerCore:Log("PlayerManager:disable_cooldown_upgrade(" .. KineticTrackerCore.concat_tbl_with_keys({category=category,upgrade=upgrade},",","=") .. "), upgrade_value=" .. tostring(upgrade_value))
 	if upgrade_value == 0 then
 		return
 	end
