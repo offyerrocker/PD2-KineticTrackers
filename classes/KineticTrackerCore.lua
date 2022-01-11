@@ -1,3 +1,8 @@
+--[[
+	todo: 
+	timer option to count up
+	 use user's per-buff show-timer setting and time format string
+--]]
 
 KineticTrackerCore = _G.KineticTrackerCore or {}
 
@@ -14,6 +19,9 @@ KineticTrackerCore.default_settings = {
 	multiplechoice_setting = 1
 }
 KineticTrackerCore.settings = table.deep_map_copy(KineticTrackerCore.default_settings)
+KineticTrackerCore.default_buff_settings = {
+	--not used
+}
 
 
 -------------------------------------------------------------
@@ -130,22 +138,46 @@ function KineticTrackerCore:IsLoggingEnabled()
 	return self.settings.logs_enabled
 end
 
-
+function KineticTrackerCore:GetBuffDisplaySettings(id)
+	return {
+		value_threshold = false,
+		timer_enabled = true
+	} 
+	
+	--or self.settings.buffs[id]
+end
 
 
 -------------------------------------------------------------
 --*********************    Core functionality    *********************--
 -------------------------------------------------------------
 
+Hooks:Add("PlayerManager_OnCheckSkills","kinetictrackers_on_check_skills_add_listeners",function(pm)
+	
+end)
+
+function KineticTrackerCore:AddGeneralBuffs()
+	if self._holder then 
+		self._holder:AddBuff("absorption",{})
+		self._holder:AddBuff("dodge_chance",{})
+		self._holder:AddBuff("crit_chance",{})
+		self._holder:AddBuff("damage_resistance",{})
+		self._holder:AddBuff("fixed_health_regen",{})
+		self._holder:AddBuff("health_regen",{})
+		self._holder:AddBuff("weapon_reload_speed",{})
+		self._holder:AddBuff("weapon_damage_bonus",{})
+	end
+end
 
 function KineticTrackerCore:InitHolder()
 	self:InitBuffTweakData()
-	
 	
 	self._animator = QuickAnimate:new("kinetictracker_animator",{parent = KineticTrackerCore,updater_type = QuickAnimate.updater_types.HUDManager,paused = false})
 
 	self._ws = self._ws or managers.gui_data:create_fullscreen_workspace()
 	self._holder = KineticTrackerHolder:new(self)
+	
+	self:AddGeneralBuffs()
 end
 
 function KineticTrackerCore:GetBuffIdFromProperty(name)
@@ -172,7 +204,13 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		temporary_upgrade = {
 			temporary = {
 				revive_damage_reduction = "combat_medic", --on revive other player
-				single_shot_fast_reload = "aggressive_reload"
+				single_shot_fast_reload = "aggressive_reload",
+				overkill_damage_multiplier = "overkill",
+				dmg_multiplier_outnumbered = "underdog_basic",
+				dmg_dampener_outnumbered = "underdog_aced",
+				dmg_dampener_outnumbered_strong = "overdog",
+				loose_ammo_restore_health = "ammo_box_pickup_health",
+				loose_ammo_give_team = "ammo_box_pickup_share"
 			}
 		}
 	}
@@ -205,18 +243,165 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		absorption = { --(general absorption)
 			disabled = true,
 			source = "general",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_kitr_buff_damage_absorption_title",
+			upd_func = function(t,dt,display_setting,buff_data)
+				return managers.player:damage_absorption() * 10
+			end,
+			icon_data = {
+				source = "perk",
+				tree = 14,
+				card = 1
+			},
+			display_format = "%0.1f"
+		},
+		dodge_chance = { --(general dodge chance)
+			disabled = true,
+			source = "skill",
+--			text_id = "menu_jail_diet_beta",
+			text_id = "menu_kitr_buff_dodge_chance_title",
+			upd_func = function(t,dt,display_setting,buff_data)
+				local pm = managers.player
+				local player = pm:local_player()
+				local movement_ext = player:movement()
+				return pm:skill_dodge_chance(movement_ext:running(), movement_ext:crouching(), movement_ext:zipline_unit()) * 100
+			end,
 			icon_data = {
 				source = "skill",
-				skill_id = "asgagadfgsdfgdf",
-				tree = 1
+				skill_id = "jail_diet",
+				tree = 4
 			},
-			display_format = ""
+			display_format = "%i%%"
 		},
+		crit_chance = { --(general crit chance)
+			disabled = true,
+			source = "skill",
+			text_id = "menu_kitr_buff_crit_chance_title",
+--			text_id = "menu_backstab_beta",
+			upd_func = function(t,dt,display_setting,buff_data)
+				local pm = managers.player
+				
+				local detection_risk = math.round(managers.blackmarket:get_suspicion_offset_from_custom_data({
+					armors = managers.blackmarket:equipped_armor(true,true)
+				}, tweak_data.player.SUSPICION_OFFSET_LERP or 0.75) * 100)
+				return pm:critical_hit_chance(detection_risk) * 100
+			end,
+			icon_data = {
+				source = "skill",
+				skill_id = "backstab",
+				tree = 4
+			},
+			display_format = "%i%%"
+		},
+		damage_resistance = { --general damage resist
+			disabled = true,
+			source = "skill",
+			text_id = "menu_kitr_buff_damage_resistance_title",
+			upd_func = function(t,dt,display_setting,buff_data)
+				return (1 - managers.player:damage_reduction_skill_multiplier()) * 100
+			end,
+			icon_data = {
+				source = "skill",
+				skill_id = "juggernaut"
+			},
+			display_format = "%i%%"
+		},
+		fixed_health_regen = { --general health regen (heal +specific amount)
+			disabled = true,
+			source = "general",
+			text_id = "menu_kitr_buff_fixed_health_regen_title",
+			show_timer = true,
+			upd_func = function(t,dt,display_setting,buff_data)
+				local pm = managers.player
+				local player = pm:local_player()
+				local dmg_ext = player:character_damage()
+				local time_left = dmg_ext._health_regen_update_timer or 0
+				return pm:fixed_health_regen() * 100,time_left
+			end,
+			icon_data = {
+				source = "hud_icon",
+				skill_id = "csb_health" --temp
+			},
+			display_format = "+%i%%"
+		},
+		health_regen = { --general fixed health regen (heal % of max health)
+			disabled = true,
+			source = "general",
+			text_id = "menu_kitr_buff_health_regen_title",
+			show_timer = true,
+			upd_func = function(t,dt,display_setting,buff_data)
+				local pm = managers.player
+				local player = pm:local_player()
+				local dmg_ext = player:character_damage()
+				local time_left = dmg_ext._health_regen_update_timer or 0
+				return pm:health_regen() * 10,time_left
+			end,
+			icon_data = {
+				source = "perk",
+				tree = 2,
+				card = 9
+			},
+			display_format = "+%0.2f"
+		},
+		
+		--todo weapon buffs
+		weapon_reload_speed = {
+			disabled = true,
+			source = "general",
+			text_id = "menu_kitr_buff_weapon_reload_speed_multiplier",
+			show_timer = false,
+			upd_func = function(t,dt,display_setting,buff_data)
+				local player = managers.player:local_player()
+				local inv_ext = player:inventory()
+				local equipped_unit = inv_ext:equipped_unit()
+				if alive(equipped_unit) then 
+					local base = equipped_unit:base()
+					return base and base:reload_speed_multiplier()
+				end
+			end,
+			icon_data = {
+				source = "hud_icon",
+				skill_id = "equipment_stapler"
+			},
+			display_format = "x%0.2f"
+		},
+		weapon_damage_bonus = {
+			disabled = true,
+			source = "general",
+			text_id = "menu_kitr_buff_weapon_damage_multiplier",
+			show_timer = false,
+			upd_func = function(t,dt,display_setting,buff_data)
+				local player = managers.player:local_player()
+				local inv_ext = player:inventory()
+				local equipped_unit = inv_ext:equipped_unit()
+				if alive(equipped_unit) then 
+					local base = equipped_unit:base()
+					return base and base:damage_multiplier()
+				end
+			end,
+			icon_data = {
+				source = "hud_icon",
+				skill_id = "equipment_stapler"
+			},
+			display_format = "x%0.2f"
+		},
+		
+		
 		ecm_jammer = { --(ecm jammer timer)
 			disabled = true,
 			source = "skill",
 			text_id = "menu_ecm_2x_beta",
+			upd_func = function(t,dt,display_setting,buff_data)
+				local threshold = display_setting.value_threshold
+				local groupaistate = managers.groupai:state()
+				local ecm_jammers = groupaistate._ecm_jammers
+				for u_key,ecm_data in pairs(ecm_jammers) do
+					local unit = ecm_data.unit
+					local jam_settings = ecm_data.settings
+--					if jam_settings.camera then 
+					
+--					end
+				end
+			end,
 			icon_data = {
 				source = "skill",
 				skill_id = "ecm_2x",
@@ -232,51 +417,6 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				source = "skill",
 				skill_id = "ecm_booster",
 				tree = 4
-			},
-			display_format = ""
-		},
-		dodge_chance = { --(general dodge chance)
-			disabled = true,
-			source = "skill",
-			text_id = "menu_jail_diet_beta",
-			icon_data = {
-				source = "skill",
-				skill_id = "jail_diet",
-				tree = 4
-			},
-			display_format = ""
-		},
-		crit_chance = { --(general crit chance)
-			disabled = true,
-			source = "skill",
-			text_id = "menu_backstab_beta",
-			icon_data = {
-				source = "skill",
-				skill_id = "backstab",
-				tree = 4
-			},
-			display_format = ""
-		},
-		damage_resistance = { --general damage resist
-			disabled = true,
-			source = "skill",
-			text_id = "asgagadfgsdfgdf",
-			icon_data = {
-				source = "skill",
-				skill_id = "asgagadfgsdfgdf",
-				tree = 1
-			},
-			display_format = ""
-		},
-		health_regeneration = { --general health regen
-			disabled = true,
-			source = "general",
-			text_id = "asgagadfgsdfgdf",
-			icon_data = {
-				source = "perk",
-				skill_id = "none",
-				tree = 1,
-				card = 1
 			},
 			display_format = ""
 		},
@@ -382,7 +522,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			},
 			display_format = ""
 		},
-		ammo_efficiency = { --ammo efficiency (consecutive headshots refund ammo)
+		ammo_efficiency = { --ammo efficiency (consecutive headshots refund ammo); show stacks
 			disabled = true,
 			source = "skill",
 			text_id = "menu_single_shot_ammo_return_beta",
@@ -397,16 +537,17 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			disabled = true,
 			source = "skill",
 			text_id = "menu_speedy_reload_beta",
+			show_timer = true,
 			icon_data = {
 				source = "skill",
 				skill_id = "speedy_reload",
 				tree = 1
 			},
-			display_format = ""
+			display_format = "x%0.2f"
 		},
 		
 --enforcer
-		underdog = { --underdog (basic: damage bonus when targeted by enemies; aced: damage resist when targeted by enemies)
+		underdog_basic = { --underdog (basic: damage bonus when targeted by enemies; aced: damage resist when targeted by enemies)
 			disabled = true,
 			source = "skill",
 			text_id = "menu_underdog_beta",
@@ -415,7 +556,18 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "underdog",
 				tree = 2
 			},
-			display_format = ""
+			display_format = "%0.2fx"
+		},
+		underdog_aced = { --underdog (basic: damage bonus when targeted by enemies; aced: damage resist when targeted by enemies)
+			disabled = true,
+			source = "skill",
+			text_id = "menu_underdog_beta",
+			icon_data = {
+				source = "skill",
+				skill_id = "underdog",
+				tree = 2
+			},
+			display_format = "%0.2fx"
 		},
 		far_away = { --far away basic (accuracy bonus while ads with shotguns)
 			disabled = true,
@@ -426,7 +578,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "far_away",
 				tree = 2
 			},
-			display_format = ""
+			display_format = "%0.2fx"
 		},
 		close_by = { --close by (rof increase while hipfire with shotguns)
 			disabled = true,
@@ -437,10 +589,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "close_by",
 				tree = 2
 			},
-			display_format = ""
+			display_format = "%0.2fx"
 		},
 		overkill = { --overkill (basic: damage bonus for saw/shotgun on kill with saw/shotgun; aced: damage bonus for all ranged weapons on kill with saw/shotgun)
 			disabled = true,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_overkill_beta",
 			icon_data = {
@@ -448,7 +601,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "overkill",
 				tree = 2
 			},
-			display_format = ""
+			display_format = "%0.2fx"
 		},
 		die_hard = { --die hard basic (damage resist while interacting)
 			disabled = true,
@@ -459,7 +612,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "show_of_force",
 				tree = 2
 			},
-			display_format = ""
+			display_format = "%0.2fx"
 		},
 		bullseye = { --bullseye (armorgate) cooldown
 			disabled = true,
@@ -503,7 +656,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "bandoliers",
 				tree = 2
 			},
-			display_format = ""
+			display_format = "%0.2f%%"
 		},
 
 --technician
@@ -549,7 +702,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "fire_control",
 				tree = 3
 			},
-			display_format = ""
+			display_format = "%0.2fx"
 		},
 		lock_n_load = { --lock n' load aced (reload time reduction after autofire kills with lmg/ar/smg/specials )
 			disabled = true,
@@ -560,12 +713,13 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "shock_and_awe",
 				tree = 3
 			},
-			display_format = ""
+			display_format = "%0.2fx x%%i"
 		},
 		
 	--ghost
 		chameleon = { --sixth sense basic (mark nearby enemies)
 			disabled = true,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_chameleon_beta",
 			icon_data = {
@@ -573,10 +727,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "chameleon",
 				tree = 4
 			},
-			display_format = ""
+			display_format = "%0.2f" --show number of nearby enemies?
 		},
 		second_chances = { --nimble basic (camera loop)
 			disabled = true,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_second_chances_beta",
 			icon_data = {
@@ -588,6 +743,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 		dire_chance = { --dire need (stagger chance when armor is broken)
 			disabled = true,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_dire_need_beta",
 			icon_data = {
@@ -595,10 +751,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "dire_need",
 				tree = 4
 			},
-			display_format = ""
+			display_format = "%0.2f"
 		},
 		second_wind = { --second wind (speed bonus on armor break)
 			disabled = true,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_scavenger_beta",
 			icon_data = {
@@ -606,10 +763,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "scavenger",
 				tree = 4
 			},
-			display_format = ""
+			display_format = "%0.2fx"
 		},
+--needs a cooldown timer/timer til proc, and effect timer
 		unseen_strike = { --unseen strike (crit chance when not taking damage)
 			disabled = true,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_unseen_strike_beta",
 			icon_data = {
@@ -617,12 +776,13 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "unseen_strike",
 				tree = 4
 			},
-			display_format = ""
+			display_format = "%0.2f%%"
 		},
 	
 	--fugitive
 		desperado = { --desperado (stacking accuracy bonus per hit for pistols)
 			disabled = true,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_expert_handling",
 			icon_data = {
@@ -630,10 +790,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "expert_handling",
 				tree = 5
 			},
-			display_format = ""
+			display_format = "%0.2fx"
 		},
 		trigger_happy = { --trigger happy (stacking damage bonus per hit for pistols)
 			disabled = true,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_trigger_happy_beta",
 			icon_data = {
@@ -641,10 +802,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "trigger_happy",
 				tree = 5
 			},
-			display_format = ""
+			display_format = "%0.2fx"
 		},
 		running_from_death = { --running_from_death (basic: reload/swap speed bonus after being revived; aced: move speed bonus after being revived)
 			disabled = true,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_running_from_death_beta",
 			icon_data = {
@@ -652,10 +814,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "running_from_death",
 				tree = 5
 			},
-			display_format = ""
+			display_format = "%0.2fx"
 		},
 		up_you_go = { --up you go basic: damage resistance after being revived
 			disabled = true,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_up_you_go_beta",
 			icon_data = {
@@ -726,10 +889,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		marathon_man = { --marathon man (damage reduction in medium range of enemies)
 			disabled = true,
 			source = "skill",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck1_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 1,
 				card = 1
 			},
@@ -738,10 +900,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		hostage_situation = { --hostage situation (damage resistance per hostage)
 			disabled = true,
 			source = "skill",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck1_5",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 1,
 				card = 5
 			},
@@ -751,10 +912,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		meat_shield = { --meat shield (increased threat when close to allies)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck2_3",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 2,
 				card = 3
 			},
@@ -764,10 +924,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		reinforced_armor = { --reinforced armor (temporary invuln on armor break) + cooldown
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck3_7",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 3,
 				card = 7
 			},
@@ -777,10 +936,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		elusive = { --elusive (decreased threat when close to allies)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck4_3",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 4,
 				card = 3
 			},
@@ -790,10 +948,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		tooth_and_claw = { --tooth and claw (guaranteed armor regen timer after break)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck5_9",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 5,
 				card = 9
 			},
@@ -803,10 +960,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		bag_of_tricks = { --bag of tricks/luck of the irish/dutch courage (reduced target chance from crouching still)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck7_3",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 7,
 				card = 3
 			},
@@ -815,10 +971,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		breath_of_fresh_air = { --breath of fresh air (increased armor recovery rate when standing still)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck7_9",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 7,
 				card = 9
 			},
@@ -828,10 +983,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		overdog = { --overdog (damage resist when surrounded, stacking melee hit damage) (shared with sociopath)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck8_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 8,
 				card = 1
 			},
@@ -840,10 +994,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		basic_close_combat = { --basic close combat
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck8_3",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 8,
 				card = 3
 			},
@@ -852,10 +1005,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		life_leech = { --life leech (melee hit restores health)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck8_9",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 8,
 				card = 9
 			},
@@ -865,12 +1017,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		tension = { --tension (armor gate on kill)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck9_3",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 9,
-				card = 3,
+				card = 3
 				
 			},
 			display_format = ""
@@ -878,10 +1029,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		clean_hit = { --clean hit (health on melee kill)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck9_5",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 9,
 				card = 5
 			},
@@ -890,37 +1040,36 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		overdose = { --overdose (armor gate on medium range kill)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck9_7",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 9,
-				card = 7,
+				card = 7
 			},
 			display_format = ""
 		},
 	--gambler
 		ammo_box_pickup_health = { --medical supplies (health on ammo box pickup)
 			disabled = true,
+			show_timer = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck10_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 10,
-				card = 7,
+				card = 1
 			},
 			display_format = ""
 		},
 		ammo_box_pickup_share = { --ammo give out (ammo box team share)
 			disabled = true,
+			show_timer = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck10_3",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 10,
-				card = 7,
+				card = 3
 			},
 			display_format = ""
 		},
@@ -928,12 +1077,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		histamine = { --histamine (health on damage)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck11_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 11,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		},
@@ -941,24 +1089,22 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		koi_irezumi = { --koi irezumi (armor recovery rate inverse to health)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck12_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 12,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		},
 		hebi_irezumi = { --hebi irezumi (move speed inverse to health)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck12_3",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 12,
-				card = 3,
+				card = 3
 			},
 			display_format = ""
 		},
@@ -966,12 +1112,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		point_break = { --point break (stored health per kill)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck13_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 13,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		},
@@ -992,24 +1137,22 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		blitzkrieg_bop = { --blitzkrieg bop (armor regen timer)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck15_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 15,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		},
 		lust_for_life = { --lust for life (armor on damage)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck15_7",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 15,
-				card = 7,
+				card = 7
 			},
 			display_format = ""
 		},
@@ -1017,12 +1160,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		prospect = { --prospect (health/armor on any crew kill)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck16_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 16,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		},
@@ -1030,12 +1172,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		kingpin_injector = { --injector throwable
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck17_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 17,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		},
@@ -1043,24 +1184,22 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		sicario_smoke_bomb = { --smoke bomb (cooldown, in-screen effect)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck18_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 18,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		},
 		twitch = { --twitch (shot dodge cooldown)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck18_3",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 18,
-				card = 3,
+				card = 3
 			},
 			display_format = ""
 		},
@@ -1068,24 +1207,22 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		virtue = { --virtue (hip flask; general delayed damage) + cooldown
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck19_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 19,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		},
 		calm = { --calm (4s free delayed damage negation)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck19_5",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 19,
-				card = 5,
+				card = 5
 			},
 			display_format = ""
 		},
@@ -1093,12 +1230,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		gas_dispenser = { --gas dispenser tagged
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck20_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 20,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		},
@@ -1106,24 +1242,22 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		pocket_ecm = { --pocket ecm throwable
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck21_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 21,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		},
 		kluge = { --kluge (dodge on kill while feedback active)
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck21_7",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 21,
-				card = 1,
+				card = 7
 			},
 			display_format = ""
 		},
@@ -1131,12 +1265,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		leech = { --leech throwable, temp invuln on healthgate
 			disabled = true,
 			source = "perk",
-			text_id = "asgagadfgsdfgdf",
+			text_id = "menu_deck22_1",
 			icon_data = {
 				source = "perk",
-				skill_id = "asgagadfgsdfgdf",
 				tree = 22,
-				card = 1,
+				card = 1
 			},
 			display_format = ""
 		}

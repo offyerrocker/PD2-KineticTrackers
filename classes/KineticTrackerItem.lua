@@ -1,10 +1,34 @@
 KineticTrackerItem = KineticTrackerItem or class()
 
+--given a guiobject's nonzero dimensions w1/h1, and maximum constrained nonzero dimensions w2/h2,
+--calculates the largest possible dimensions within w2/h2 that maintain the aspect ratio of w1/h1
+--optionally, allow growing up to w2/h2 if both dimensions are smaller(incomplete)
+function KineticTrackerItem.ConstrainedScaleDown(w1,h1,w2,h2,can_grow)
+	if w1 <= w2 and h1 <= h2 then 
+--		if can_grow then 
+			
+--			return KineticTrackerItem.ConstrainedScaleDown(w2,h2,w1,h1,false)
+--		else
+			return w1,h1
+--		end
+	else
+		if w1 > h1 then 
+			return w2,h2 * w1/h1
+		else --h1 >= w1
+			return w2 * h1/w1,h2
+		end
+	end
+end
+
+
+
+
 
 function KineticTrackerItem:init(params)
 	local id = params.id
 	local icon_data = params.icon_data
 	local margin = 4
+	self._text_bg_margin = margin
 	local mode = "normal"
 	
 	local primary_color,secondary_color
@@ -38,8 +62,17 @@ function KineticTrackerItem:init(params)
 	
 	local parent_panel = params.parent_panel
 	local panel = parent_panel:panel({
-		name = id
+		name = id,
+		w = 256,
+		h = 32
 	})
+	local debug_rect = panel:rect({
+		name = "debug",
+		layer = -100,
+		alpha = 0.2,
+		color = Color(math.random(),math.random(),1)
+	})
+	
 	self._panel = panel
 	local icon = panel:bitmap({
 		name = "icon",
@@ -55,6 +88,10 @@ function KineticTrackerItem:init(params)
 		visible = true,
 		layer = 1
 	})
+	
+	local max_w,max_h = 24,24
+	local icon_w,icon_h = icon:size()
+	icon:set_size(KineticTrackerItem.ConstrainedScaleDown(icon_w,icon_h,max_w,max_h,false))
 	
 	local text_1,text_2
 	if mode == "compact" then
@@ -141,7 +178,7 @@ function KineticTrackerItem:init(params)
 			text = params.primary_label,
 			font = font_1,
 			font_size = font_size_1,
-			align = "left",
+			align = "right",
 			vertical = "top",
 			color = secondary_color,
 			blend_mode = "normal",
@@ -161,10 +198,10 @@ end
 
 function KineticTrackerItem:SetPrimaryText(text)
 	self._primary_text:set_text(text)
-	
+	local margin = self._text_bg_margin
 	local _x,_y,_w,_h = self._primary_text:text_rect()
-	self._text_bg_rect:set_position(_x - margin,_y - margin)
 	self._text_bg_rect:set_size(_w + margin + margin,_h + margin + margin)
+	self._text_bg_rect:set_position(_x - margin,_y - margin)
 end
 
 function KineticTrackerItem:SetSecondaryText(text)
@@ -175,7 +212,9 @@ function KineticTrackerItem:Remove()
 	self._panel:parent():remove(self._panel)
 end
 
-
+function KineticTrackerItem:SetVisible(state)
+	self._panel:set_visible(state)
+end
 
 do return end
 

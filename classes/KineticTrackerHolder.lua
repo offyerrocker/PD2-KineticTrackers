@@ -20,6 +20,10 @@ function KineticTrackerHolder:init(core)
 	
 end
 
+function KineticTrackerHolder:Log(...)
+	return self._core:Log(...)
+end
+
 function KineticTrackerHolder:Animate(...)
 	return self._core:animate(...)
 end
@@ -33,9 +37,9 @@ function KineticTrackerHolder:IsAnimating(...)
 end
 
 function KineticTrackerHolder:AnimateFadeoutItem(item)
-	local fadeout_time = 0.5
+	local fadeout_time = 0.25
 	local dx = 0
-	local dy = -100
+	local dy = -50
 	
 	self:Animate(item._panel,"animate_fadeout",function(o) o:parent():remove(o) end,fadeout_time,item._panel:alpha(),dx,dy)
 end
@@ -70,25 +74,40 @@ function KineticTrackerHolder:AddBuff(id,params)
 	else
 		priority = 1
 	end
+	local show_timer = buff_tweakdata.show_timer
+	local primary_label = ""
+	local secondary_label = ""
+	local secondary_label_format = "%0.1f"
+	local primary_label_format = buff_tweakdata.display_format or ""
+	if show_timer and params.end_t then 
+		local t = Application:time()
+		secondary_label = string.format(secondary_label_format,params.end_t - t)
+	end
+	primary_label = params.value and string.format(primary_label_format,params.value) or ""
 	
 --	local buff_panel = self:CreateBuff(id,buff_tweakdata)
 	local new_item = KineticTrackerItem:new({
 		id = id,
 		parent_panel = self._panel,
 		icon_data = buff_tweakdata.icon_data,
-		primary_label = "000",
-		secondary_label = "123",
-		color = Color.red
+		primary_label = primary_label,
+		secondary_label = secondary_label,
+		color = Color.white
 	})
 	
 	--do animate buff name w/indicator
 	
 	local buff_data = {
+		id = id,
+		primary_label_format = primary_label_format,
+		secondary_label_format = secondary_label_format,
 		value = params.value,
 		start_t = params.start_t,
 		end_t = params.end_t,
 		duration = params.duration,
-		item = new_item
+		show_timer = show_timer,
+		item = new_item,
+		upd_func = buff_tweakdata.upd_func
 	}
 	
 	table.insert(self._buffs,priority,buff_data)
@@ -128,28 +147,74 @@ function KineticTrackerHolder:GetBuff(id)
 end
 
 function KineticTrackerHolder:Update(t,dt)
-	for i=#self._buffs,1,-1 do 
-		local buff_data = self._buffs[i]
-		local end_t = buff_data.end_t
-		if end_t and end_t <= t then 
---			local item = buff_data.item
-			--animate out
-			self:AnimateFadeoutItem(buff_data.item)
-			self._buffs[i] = nil
-		else
-			local panel = buff_data.item._panel
-			
-			local align = "horizontal"
-			if align == "horizontal" then 
-				local w = 100
-				local offset = 200
-				panel:set_x(offset + (w * i))
-				panel:set_y(300)
+	if alive(managers.player:local_player()) then 
+		local start_x = 256
+		local start_y = 650
+		
+		local _i = #self._buffs
+		for i=#self._buffs,1,-1 do 
+			local buff_data = self._buffs[i]
+			local end_t = buff_data.end_t
+			if end_t and end_t <= t then 
+	--			local item = buff_data.item
+				--animate out
+				self:AnimateFadeoutItem(buff_data.item)
+				table.remove(self._buffs,i)
 			else
-				local h = 100
-				local offset = 200
-				panel:set_x(300)
-				panel:set_y(offset + (h * i))
+				local id = buff_data.id
+				local item = buff_data.item
+				local panel = item._panel
+				local buff_display_setting = self._core:GetBuffDisplaySettings(id)
+				
+				local value = buff_data.value
+				local end_t = buff_data.end_t
+				local duration_remaining
+				local timer_text
+				if end_t then 
+					timer_text = end_t - t
+				end
+				
+				local hidden = false
+				local below_threshold,any_other_reason_to_hide
+				
+				if buff_data.upd_func then 
+					local _timer_text
+					value,_timer_text = buff_data.upd_func(t,dt,buff_display_setting,buff_data)
+					timer_text = _timer_text or timer_text
+					if value and (not buff_display_setting.value_threshold or (value > buff_display_setting.value_threshold)) then 
+						--proceed as planned
+					else
+						below_threshold = true
+					end
+				end
+				if value then 
+					item:SetPrimaryText(string.format(buff_data.primary_label_format,value))
+				else
+					item:SetPrimaryText("")
+				end
+				if buff_data.show_timer and buff_display_setting.timer_enabled and timer_text then 
+					item:SetSecondaryText(string.format(buff_data.secondary_label_format,timer_text))
+				else
+					item:SetSecondaryText("")
+				end
+				
+				hidden = below_threshold or any_other_reason_to_hide
+				
+				if not hidden then
+					--todo animate
+					local align = "vertical"
+					if align == "horizontal" then 
+						local w = 256
+						panel:set_x(start_x + (w * _i))
+						panel:set_y(start_y)
+					else
+						local h = -32
+						panel:set_x(start_x)
+						panel:set_y(start_y + (h * _i))
+					end
+					_i = _i - 1
+				end
+				item:SetVisible(not hidden)
 			end
 		end
 	end

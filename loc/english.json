@@ -1,0 +1,32 @@
+{
+	
+	"menu_kitr_buff_fixed_health_regen_title" : "Fixed Health Regen",
+	"menu_kitr_buff_health_regen_title" : "Fixed Health Regen",
+	"menu_kitr_buff_crit_chance_title" : "Crit Chance",
+	"menu_kitr_buff_dodge_chance_title" : "Dodge Chance",
+	"menu_kitr_buff_damage_resistance_title" : "Damage Resistance",
+	"menu_kitr_buff_damage_absorption_title" : "Damage Absorption",
+	"menu_kitr_buff_weapon_damage_multiplier" : "Weapon Damage",
+	"menu_kitr_buff_weapon_reload_speed_multiplier" : "Weapon Reload Speed",
+	
+	
+	
+	
+	"menu_modtemplate_title" : "Mod Template",
+	"menu_modtemplate_desc" : "Description of Mod Template",
+	"modtemplate_toggle_title" : "Toggle Title",
+	"modtemplate_toggle_desc" : "Toggle Desc",
+	"modtemplate_slider_title" : "Slider Title",
+	"modtemplate_slider_desc" : "Slider Desc",
+	"modtemplate_multiplechoice_title" : "Multiple Choice Title",
+	"modtemplate_multiplechoice_desc" : "Multiple Choice Desc",
+	"modtemplate_multiplechoice_a" : "Choice 1",
+	"modtemplate_multiplechoice_b" : "Choice 2",
+	"modtemplate_multiplechoice_c" : "Choice 3",
+	"modtemplate_button_title" : "Button Title",
+	"modtemplate_button_desc" : "Button Desc",
+	"modtemplate_keybind_2_title" : "Keybind 2",
+	"modtemplate_keybind_2_desc" : "Keybind 2 Desc",
+	"modtemplate_keybind_1_title" : "Keybind 1",
+	"modtemplate_keybind_1_desc" : "Keybind 1 Desc"
+}
