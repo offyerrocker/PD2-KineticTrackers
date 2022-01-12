@@ -57,8 +57,7 @@ function KineticTrackerHolder:AddBuff(id,params)
 	local buff_tweakdata = id and self.tweak_data[id]
 	local buff_display_setting = self._core:GetBuffDisplaySettings(id)
 --	if buff_tweakdata.disabled or buff_display_setting.disabled then 
-	if buff_display_setting.disabled then 
-		--todo replace with user setting buff disabled
+	if not buff_display_setting.enabled then 
 		return
 	end
 	local existing_buff_data = self:GetBuff(id)
@@ -196,30 +195,30 @@ function KineticTrackerHolder:Update(t,dt)
 					local _timer_text
 					value,_timer_text = buff_data.upd_func(t,dt,buff_display_setting,buff_data)
 					timer_text = _timer_text or timer_text
-					if value and (not buff_display_setting.value_threshold or (value > buff_display_setting.value_threshold)) then 
-						--proceed as planned
-					else
-						below_threshold = true
-					end
 				end
 				
 				if value then 
 					if buff_data.modify_value_func then 
 						value = buff_data.modify_value_func(value)
 					end
-					item:SetPrimaryText(string.format(buff_data.primary_label_format,value))
+					if not buff_display_setting.value_threshold or value > buff_display_setting.value_threshold then 
+						item:SetPrimaryText(string.format(buff_data.primary_label_format,value))
+					else
+						below_threshold = true
+					end
 				else
 					item:SetPrimaryText("")
 				end
-				if buff_data.show_timer and buff_display_setting.timer_enabled and timer_text then 
-					item:SetSecondaryText(string.format(buff_data.secondary_label_format,timer_text))
-				else
-					item:SetSecondaryText("")
-				end
 				
 				hidden = below_threshold or any_other_reason_to_hide
-				
+
 				if not hidden then
+				
+					if buff_data.show_timer and buff_display_setting.timer_enabled and timer_text then 
+						item:SetSecondaryText(string.format(buff_data.secondary_label_format,timer_text))
+					else
+						item:SetSecondaryText("")
+					end
 					--todo animate
 					local align = "vertical"
 					if align == "horizontal" then 

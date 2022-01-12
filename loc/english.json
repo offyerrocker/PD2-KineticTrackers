@@ -1,7 +1,7 @@
 {
 	
 	"menu_kitr_buff_fixed_health_regen_title" : "Fixed Health Regen",
-	"menu_kitr_buff_health_regen_title" : "Fixed Health Regen",
+	"menu_kitr_buff_health_regen_title" : "Health Regen",
 	"menu_kitr_buff_crit_chance_title" : "Crit Chance",
 	"menu_kitr_buff_dodge_chance_title" : "Dodge Chance",
 	"menu_kitr_buff_damage_resistance_title" : "Damage Resistance",

@@ -91,7 +91,7 @@ function KineticTrackerItem:init(params)
 	local max_w,max_h = 24,24
 	local icon_w,icon_h = icon:size()
 	icon:set_size(KineticTrackerItem.ConstrainedScaleDown(icon_w,icon_h,max_w,max_h,false))
-	icon:set_y((panel:h() - icon_h) / 2)
+	icon:set_y((panel:h() - icon:h()) / 2)
 	local text_1,text_2,buff_name
 	local buff_label = params.buff_label
 

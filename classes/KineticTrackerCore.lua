@@ -1,7 +1,7 @@
 --[[
 	todo: 
 	
-	
+	thinking about making options per-buff specifically now.
 	
 	
 	
@@ -12,10 +12,14 @@
 	
 	buff_setting = {
 		enabled = true,
+		value_threshold = 2,
 		timer_enabled = true,
 		timer_minutes_display = 1,--1 = minutes, 2 = seconds
 		timer_precision = 2,
-		
+		timer_flashing_mode = 1,
+		timer_flashing_threshold = 3,
+		timer_flashing_speed = 1,
+		color = "ffd700"
 	}
 	
 	
@@ -171,12 +175,831 @@ KineticTrackerCore.default_settings = {
 	slider_setting = 0,
 	palettes = table.deep_map_copy(KineticTrackerCore.default_palettes),
 	multiplechoice_setting = 1,
-	buffs = {}
+	buffs = {
+		absorption = {
+			enabled = true,
+			value_threshold = 2,
+			color = "ffd700"
+		},
+		dodge_chance = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffd700"
+		},
+		crit_chance = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffd700"
+		},
+		damage_resistance = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffd700"
+		},
+		fixed_health_regen = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffd700"
+		},
+		health_regen = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffd700"
+		},
+		weapon_reload_speed = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffd700"
+		},
+		weapon_damage_bonus = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffd700"
+		},
+		weapon_accuracy_bonus = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffd700"
+		},
+		melee_damage_bonus = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		TEMPLATE = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,--1 = minutes, 2 = seconds
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		ecm_jammer = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		ecm_feedback = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		combat_medic = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		combat_medic_steelsight_mul = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		combat_medic_damage_mul = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		quick_fix = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		painkillers = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		inspire_basic = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		inspire_basic_cooldown = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		inspire_aced_cooldown = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		forced_friendship = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		partners_in_crime = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		stockholm_syndrome = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		stable_shot = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		rifleman = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		ammo_efficiency = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		aggressive_reload = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 1,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		underdog_basic = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		underdog_aced = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		far_away = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		close_by = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		overkill = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		die_hard = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		bullseye = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = false,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		scavenger = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		bullet_storm = {
+			enabled = true,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		fully_loaded = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		hardware_expert = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		drill_sawgeant = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		kick_starter = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		fire_control = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		lock_n_load = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		chameleon = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		second_chances = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		dire_chance = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		second_wind = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		unseen_strike = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		desperado = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		trigger_happy = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		running_from_death_basic_reload_speed = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		running_from_death_basic_swap_speed = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		running_from_death_aced = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		up_you_go = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		swan_song = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		messiah = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		bloodthirst_basic = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		bloodthirst_aced = {
+			enabled = false,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		counterstrike = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		berserker_basic = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		berserker_aced = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		marathon_man = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		hostage_situation = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		meat_shield = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		reinforced_armor = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		reinforced_armor_cooldown = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		elusive = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		tooth_and_claw = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		bag_of_tricks = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		breath_of_fresh_air = {
+			enabled = false,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		overdog = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 1,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		basic_close_combat = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		life_leech = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		tension = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		clean_hit = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		overdose = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		ammo_box_pickup_health = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		ammo_box_pickup_share = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		histamine = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		koi_irezumi = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		hebi_irezumi = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		point_break = {
+			enabled = true,
+			value_threshold = 0,
+			color = "ffffff"
+		},
+		excitement = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		blitzkrieg_bop = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		lust_for_life = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		prospect = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		kingpin_injector = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		sicario_smoke_bomb = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		twitch = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		virtue = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		delayed_damage = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		calm = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 2,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		gas_dispenser = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		pocket_ecm = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		kluge = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		leech = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		}
+	}
 }
 KineticTrackerCore.settings = table.deep_map_copy(KineticTrackerCore.default_settings)
-KineticTrackerCore.default_buff_settings = {
-	--not used
-}
 
 
 -------------------------------------------------------------
@@ -573,7 +1396,7 @@ KineticTrackerCore.menu_data = {
 		"perkdeck_hacker",
 		"perkdeck_leech"
 	},
-	buffs_lookup = { --indexed by string buff_id
+	buffs_lookup = { --indexed by string buff_id; populated on MenuManagerSetupCustomMenus
 	}
 }
 
@@ -663,8 +1486,6 @@ function KineticTrackerCore:SaveSettings()
 end
 
 function KineticTrackerCore:LoadSettings()
-	--self:PopulateBuffSettings()
-
 	local file = io.open(self._save_path, "r")
 	if (file) then
 		for k, v in pairs(json.decode(file:read("*all"))) do
@@ -879,11 +1700,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 --[[
 		example_skill = {
 			disabled = false,
-			text_id = "",
+			text_id = "", --the localized name of this buff, as it appears in the menu and in the game
 			icon_data = {
-				source = "skill",
-				skill_id = "sadfasdf",
-				tree = 1
+				source = "skill", --skill, perk, or hud_icon
+				skill_id = "sadfasdf", --skill name, or hud_icon name
+				tree = 1 --skilltree (to sort in menu options)
 			},
 			display_format = ""
 		},
@@ -892,12 +1713,21 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			text_id = "",
 			icon_data = {
 				source = "perk",
-				skill_id = "sadfasdf",
 				tree = 1,
 				card = 1
 			},
 			display_format = ""
 		},
+		
+		
+		
+		
+			menu_options = {
+				min_value = 0, --used for sliders
+				max_value = 10, --used for sliders
+				step = 1, --used for sliders
+				default_value = 1, --used for all menu option types
+			},
 --]]
 		absorption = { --(general absorption)
 			disabled = false,
@@ -1084,7 +1914,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			},
 			display_format = "%0.2f%%"
 		},
-		melee_damage_bonus = {
+		melee_damage_bonus = { --this basically just checks the bloodthirst melee damage bonus
 			disabled = false,
 			source = "general",
 			text_id = "menu_kitr_buff_melee_damage_multiplier",
@@ -1195,7 +2025,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2f%%"
 		},
 		painkillers = { --painkillers (damage reduction for teammates you revive)
-			disabled = true, --needs testing
+			disabled = false, --needs testing
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_fast_learner_beta",
@@ -1617,7 +2447,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2fx"
 		},
 		up_you_go = { --up you go basic: damage resistance after being revived
-			disabled = true,
+			disabled = false,
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_up_you_go_beta",
@@ -1654,7 +2484,18 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			},
 			display_format = ""
 		},
-		bloodthirst = { --bloodthirst (basic: stacking melee damage bonus per kill; aced: reload speed bonus on melee kill)
+		bloodthirst_basic = { --bloodthirst basic: stacking melee damage bonus per kill
+			disabled = true, --not implemented; requires guessing coroutine playerbloodthirstbase
+			source = "skill",
+			text_id = "menu_bloodthirst",
+			icon_data = {
+				source = "skill",
+				skill_id = "bloodthirst",
+				tree = 5
+			},
+			display_format = ""
+		},
+		bloodthirst_aced = { --bloodthirst aced: reload speed bonus on melee kill
 			disabled = true, --not implemented; requires guessing coroutine playerbloodthirstbase
 			source = "skill",
 			text_id = "menu_bloodthirst",
@@ -1676,7 +2517,18 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			},
 			display_format = ""
 		},
-		berserker = { --berserker (damage bonus inverse to health ratio)
+		berserker_basic = { --berserker (melee damage bonus inverse to health ratio)
+			disabled = true, --not implemented; requires upd_func
+			source = "skill",
+			text_id = "menu_wolverine_beta",
+			icon_data = {
+				source = "skill",
+				skill_id = "wolverine",
+				tree = 5
+			},
+			display_format = ""
+		},
+		berserker_aced = { --berserker (ranged damage bonus inverse to health ratio)
 			disabled = true, --not implemented; requires upd_func
 			source = "skill",
 			text_id = "menu_wolverine_beta",
@@ -1691,7 +2543,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 
 	--crew chief
 		marathon_man = { --marathon man (damage reduction in medium range of enemies)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck1_1",
 			icon_data = {
@@ -1702,7 +2554,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		hostage_situation = { --hostage situation (damage resistance per hostage)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck1_5",
 			icon_data = {
@@ -1714,7 +2566,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--muscle
 		meat_shield = { --meat shield (increased threat when close to allies)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck2_3",
 			icon_data = {
@@ -1725,8 +2577,18 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 	--armorer
-		reinforced_armor = { --reinforced armor (temporary invuln on armor break) + cooldown
-			disabled = true,
+		reinforced_armor = { --reinforced armor (temporary invuln on armor break)
+			source = "perk",
+			text_id = "menu_deck3_7",
+			icon_data = {
+				source = "perk",
+				tree = 3,
+				card = 7
+			},
+			display_format = ""
+		},
+		reinforced_armor_cooldown = { --(temp invuln cooldown)
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck3_7",
 			icon_data = {
@@ -1738,7 +2600,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--rogue
 		elusive = { --elusive (decreased threat when close to allies)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck4_3",
 			icon_data = {
@@ -1750,7 +2612,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--hitman
 		tooth_and_claw = { --tooth and claw (guaranteed armor regen timer after break)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck5_9",
 			icon_data = {
@@ -1762,7 +2624,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--burglar
 		bag_of_tricks = { --bag of tricks/luck of the irish/dutch courage (reduced target chance from crouching still)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck7_3",
 			icon_data = {
@@ -1773,7 +2635,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		breath_of_fresh_air = { --breath of fresh air (increased armor recovery rate when standing still)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck7_9",
 			icon_data = {
@@ -1785,7 +2647,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--infiltrator
 		overdog = { --overdog (damage resist when surrounded, stacking melee hit damage) (shared with sociopath)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck8_1",
 			icon_data = {
@@ -1796,7 +2658,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		basic_close_combat = { --basic close combat
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck8_3",
 			icon_data = {
@@ -1806,8 +2668,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			},
 			display_format = ""
 		},
-		life_leech = { --life leech (melee hit restores health)
-			disabled = true,
+		life_leech = { --life leech (melee hit restores health cooldown)
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck8_9",
 			icon_data = {
@@ -1818,8 +2680,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 	--sociopath
-		tension = { --tension (armor gate on kill)
-			disabled = true,
+		tension = { --tension (armor gate on kill cooldown)
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck9_3",
 			icon_data = {
@@ -1830,8 +2692,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			},
 			display_format = ""
 		},
-		clean_hit = { --clean hit (health on melee kill)
-			disabled = true,
+		clean_hit = { --clean hit (health on melee kill cooldown)
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck9_5",
 			icon_data = {
@@ -1841,8 +2703,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			},
 			display_format = ""
 		},
-		overdose = { --overdose (armor gate on medium range kill)
-			disabled = true,
+		overdose = { --overdose (armor gate on medium range kill cooldown)
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck9_7",
 			icon_data = {
@@ -1854,7 +2716,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--gambler
 		ammo_box_pickup_health = { --medical supplies (health on ammo box pickup)
-			disabled = true,
+			disabled = true, --not implemented
 			show_timer = true,
 			source = "perk",
 			text_id = "menu_deck10_1",
@@ -1866,7 +2728,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		ammo_box_pickup_share = { --ammo give out (ammo box team share)
-			disabled = true,
+			disabled = true, --not implemented
 			show_timer = true,
 			source = "perk",
 			text_id = "menu_deck10_3",
@@ -1878,8 +2740,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 	--grinder
-		histamine = { --histamine (health on damage)
-			disabled = true,
+		histamine = { --histamine (health on damage stacks)
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck11_1",
 			icon_data = {
@@ -1891,7 +2753,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--yakuza
 		koi_irezumi = { --koi irezumi (armor recovery rate inverse to health)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck12_1",
 			icon_data = {
@@ -1902,7 +2764,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		hebi_irezumi = { --hebi irezumi (move speed inverse to health)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck12_3",
 			icon_data = {
@@ -1914,7 +2776,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--ex-president
 		point_break = { --point break (stored health per kill)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck13_1",
 			icon_data = {
@@ -1926,7 +2788,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--maniac
 		excitement = { --excitement (hysteria stacks)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck14_1",
 			icon_data = {
@@ -1938,7 +2800,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--anarchist
 		blitzkrieg_bop = { --blitzkrieg bop (armor regen timer)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck15_1",
 			icon_data = {
@@ -1948,8 +2810,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			},
 			display_format = ""
 		},
-		lust_for_life = { --lust for life (armor on damage)
-			disabled = true,
+		lust_for_life = { --lust for life (armor on damage cooldown)
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck15_7",
 			icon_data = {
@@ -1961,7 +2823,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--biker
 		prospect = { --prospect (health/armor on any crew kill)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck16_1",
 			icon_data = {
@@ -1972,8 +2834,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 	--kingpin
-		kingpin_injector = { --injector throwable
-			disabled = true,
+		kingpin_injector = { --injector throwable duration/cooldown?
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck17_1",
 			icon_data = {
@@ -1985,7 +2847,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--sicario
 		sicario_smoke_bomb = { --smoke bomb (cooldown, in-screen effect)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck18_1",
 			icon_data = {
@@ -1996,7 +2858,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		twitch = { --twitch (shot dodge cooldown)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck18_3",
 			icon_data = {
@@ -2007,8 +2869,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 	--stoic
-		virtue = { --virtue (hip flask; general delayed damage) + cooldown
-			disabled = true,
+		virtue = { --virtue (hip flask) + cooldown
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck19_1",
 			icon_data = {
@@ -2018,8 +2880,19 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			},
 			display_format = ""
 		},
+		delayed_damage = { --general delayed damage
+			disabled = true, --not implemented
+			source = "perk",
+			text_id = "menu_kitr_buff_delayed_damage_title",
+			icon_data = {
+				source = "perk",
+				tree = 19,
+				card = 1
+			},
+			display_format = ""
+		},
 		calm = { --calm (4s free delayed damage negation)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck19_5",
 			icon_data = {
@@ -2031,7 +2904,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--tag team
 		gas_dispenser = { --gas dispenser tagged
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck20_1",
 			icon_data = {
@@ -2043,7 +2916,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--hacker
 		pocket_ecm = { --pocket ecm throwable
-			disabled = true,
+			disabled = true, --not implemented; requires tagteam playeraction
 			source = "perk",
 			text_id = "menu_deck21_1",
 			icon_data = {
@@ -2054,7 +2927,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		kluge = { --kluge (dodge on kill while feedback active)
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck21_7",
 			icon_data = {
@@ -2066,7 +2939,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--leech 
 		leech = { --leech throwable, temp invuln on healthgate
-			disabled = true,
+			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck22_1",
 			icon_data = {

@@ -20,6 +20,24 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 	--generate submenus for each buff here
 	--including data for later, further menu generation, such as localization and callbacks
 	for buff_name,buff_data in pairs(KineticTrackerCore.tweak_data) do 
+		
+		--check for valid settings for this buff
+		local buff_display_setting = KineticTrackerCore.settings.buffs[buff_name] 
+		if buff_display_setting then
+			if not KineticTrackerCore.default_settings.buffs[buff_name] then 
+				KineticTrackerCore:Log("ERROR: MenuManagerSetupCustomMenus: No default settings found for buff " .. tostring(buff_name))
+			else
+				for k,v in pairs(KineticTrackerCore.default_settings.buffs[buff_name]) do 
+					if buff_display_setting[k] == nil then 
+						buff_display_setting[k] = v
+					end
+				end
+			end
+		else
+			KineticTrackerCore.settings.buffs[buff_name] = table.deep_map_copy(KineticTrackerCore.default_settings.buffs[buff_name])
+			buff_display_setting = KineticTrackerCore.settings.buffs[buff_name]
+		end
+	
 		local shortname = "buff_" .. tostring(buff_name)
 		local menu_id = "menu_kitr_buff_entry_" .. tostring(buff_name)
 		local title = buff_data.text_id
@@ -82,16 +100,10 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 			if not menu_data.disabled then 
 				local menu_id = menu_data.id --template menu id for all options in this buff's submenu
 				local parent_menu_id = menu_id --the parent of this buff's submenu
-			
---				local superparent_menu_id = menu_data.parent
---				local parent_menu_id = ""
 				
-				
-				
-				
-				
-				KineticTrackerCore.settings.buffs[buff_name] = KineticTrackerCore.settings.buffs[buff_name] or {}
 				local buff_display_setting = KineticTrackerCore.settings.buffs[buff_name]
+				
+--				local default_buff_options = buff_data.menu_options or {}
 				
 				local submenu_option_items = {}
 				
@@ -105,9 +117,9 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						title = buff_data.text_id,
 						desc = "menu_kitr_buff_entry_generic_desc",
 						disabled = true,
---						callback = "",
 						menu_id = parent_menu_id
 					})
+					--callback not necessary
 				end
 				
 				--insert buff main enabled toggle
@@ -130,6 +142,36 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						menu_id = parent_menu_id
 					})
 				end
+
+				--insert value threshold check
+				if buff_data.display_format and buff_data.display_format ~= "" then 
+					--todo this needs a better indication of when there is a display value
+					local var_name = "value_threshold"
+					local option_id = menu_id .. "_value_threshold"
+					local callback_name = "callback_" .. option_id
+					MenuCallbackHandler[callback_name] = function(self,item)
+						local item_value = tonumber(item:value())
+						KineticTrackerCore.settings.buff[buff_name][var_name] = item_value
+						KineticTrackerCore:SaveSettings()
+					end
+					
+					table.insert(submenu_option_items,1,{
+						type = "slider",
+						id = option_id,
+						title = "menu_kitr_buff_option_generic_slider_value_threshold_title",
+						desc = "menu_kitr_buff_option_generic_slider_value_threshold_desc",
+						callback = callback_name,
+						value = buff_display_setting[var_name],
+						min = -100,
+						max = 100,
+						step = 1,
+						show_value = true,
+						menu_id = parent_menu_id
+					})
+					--insert value display options?
+					--stack, mul, or other
+				end
+				
 				
 				if buff_data.show_timer then 
 					--insert timer display options
@@ -328,12 +370,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 					
 				end
 				
-				if buff_data.display_format and buff_data.display_format ~= "" then 
-					--insert value display options?
-					
-					--stack, mul, or other
-				end
-				
 				
 				
 				for i,submenu_option_data in ipairs(submenu_option_items) do 
@@ -410,6 +446,9 @@ Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenus_KineticTra
 				local parent_menu_name = data.parent
 				local parent_menu = KineticTrackerCore.menu_data.menus[parent_menu_name] and KineticTrackerCore.menu_data.menus[parent_menu_name].menu_object or MenuHelper:GetMenu(parent_menu_name)
 				MenuHelper:AddMenuItem(parent_menu,menu_name,data.title,data.desc,data.menu_position or index,data.subposition)
+--				KineticTrackerCore:Log("Building menu " .. tostring(menu_name) .. " from parent " .. tostring(parent_menu_name))
+			else
+--				KineticTrackerCore:Log("Building menu " .. tostring(menu_name))
 			end
 		end
 	end
@@ -435,10 +474,11 @@ Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenus_KineticTra
 		end
 	end
 	
-	for buff_name,shortname in ipairs(KineticTrackerCore.menu_data.buffs_lookup) do 
+	for buff_name,shortname in pairs(KineticTrackerCore.menu_data.buffs_lookup) do 
+--		KineticTrackerCore:Log("Building buff menu " .. tostring(buff_name) .. ", shortname " .. tostring(shortname))
 		local data = KineticTrackerCore.menu_data.menus[shortname]
 		if data then 
-			create_menu(index,data)
+			create_menu(nil,data)
 		end
 	end
 	
