@@ -2,7 +2,7 @@
 	todo: 
 	
 	thinking about making options per-buff specifically now.
-	
+	straighten out buff-enabled setting vs buff data enabled value
 	
 	
 	create individual entries per buff in each skilltree/perkdeck?
@@ -2020,7 +2020,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				tree = 1
 			},
 			modify_value_func = function(n)
-				return (n - 1) * 100
+				return (1 - n) * 100
 			end,
 			display_format = "%0.2f%%"
 		},
@@ -2970,8 +2970,6 @@ function KineticTrackerCore:RemoveBuff(...)
 		self._holder:RemoveBuff(...)
 	end
 end
-
-
 
 --*************************************************--
 		--colorpicker/menu preview callbacks

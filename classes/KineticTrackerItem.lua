@@ -63,7 +63,8 @@ function KineticTrackerItem:init(params)
 	local panel = parent_panel:panel({
 		name = id,
 		w = 256,
-		h = 32
+		h = 32,
+		visible = false
 	})
 	local debug_rect = panel:rect({
 		name = "debug",

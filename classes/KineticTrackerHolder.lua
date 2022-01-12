@@ -46,7 +46,11 @@ end
 
 function KineticTrackerHolder:SetBuff(id,params,buff_data)
 	for k,v in pairs(params) do 
-		buff_data[k] = v
+		if type(v) ~= "table" then 
+			buff_data[k] = v
+		else
+			self:Log("Skipped params overwrite in SetBuff(" .. tostring(id) .. ") for param " .. tostring(k) .. "=" .. tostring(v) .. " (table value)")
+		end
 	end
 	--refresh visually
 end
@@ -57,9 +61,9 @@ function KineticTrackerHolder:AddBuff(id,params)
 	local buff_tweakdata = id and self.tweak_data[id]
 	local buff_display_setting = self._core:GetBuffDisplaySettings(id)
 --	if buff_tweakdata.disabled or buff_display_setting.disabled then 
-	if not buff_display_setting.enabled then 
-		return
-	end
+--	if not buff_display_setting.enabled then 
+--		return
+--	end
 	local existing_buff_data = self:GetBuff(id)
 	
 	if existing_buff_data then 
@@ -88,7 +92,7 @@ function KineticTrackerHolder:AddBuff(id,params)
 	end
 	local value = params.value
 	
-	if value then
+	if type(value) == "number" then
 		if buff_tweakdata.modify_value_func then 
 			value = buff_tweakdata.modify_value_func(value)
 		end
@@ -109,8 +113,13 @@ function KineticTrackerHolder:AddBuff(id,params)
 	
 	--do animate buff name w/indicator
 	
+	local enabled = buff_display_setting.enabled
+	
+	new_item:SetVisible(enabled)
+	
 	local buff_data = {
 		id = id,
+		enabled = enabled,
 		primary_label_format = primary_label_format,
 		secondary_label_format = secondary_label_format,
 		value = params.value,
@@ -189,7 +198,8 @@ function KineticTrackerHolder:Update(t,dt)
 				end
 				
 				local hidden = false
-				local below_threshold,any_other_reason_to_hide
+				local below_threshold
+				local disabled_by_user = not buff_data.enabled
 				
 				if buff_data.upd_func then 
 					local _timer_text
@@ -197,11 +207,11 @@ function KineticTrackerHolder:Update(t,dt)
 					timer_text = _timer_text or timer_text
 				end
 				
-				if value then 
+				if type(value) == "number" then 
 					if buff_data.modify_value_func then 
 						value = buff_data.modify_value_func(value)
 					end
-					if not buff_display_setting.value_threshold or value > buff_display_setting.value_threshold then 
+					if (not buff_display_setting.value_threshold) or (value > buff_display_setting.value_threshold) then 
 						item:SetPrimaryText(string.format(buff_data.primary_label_format,value))
 					else
 						below_threshold = true
@@ -210,15 +220,16 @@ function KineticTrackerHolder:Update(t,dt)
 					item:SetPrimaryText("")
 				end
 				
-				hidden = below_threshold or any_other_reason_to_hide
+				if buff_data.show_timer and buff_display_setting.timer_enabled and timer_text then 
+					item:SetSecondaryText(string.format(buff_data.secondary_label_format,timer_text))
+				else
+					item:SetSecondaryText("")
+				end
+				
+				hidden = below_threshold or disabled_by_user
 
 				if not hidden then
 				
-					if buff_data.show_timer and buff_display_setting.timer_enabled and timer_text then 
-						item:SetSecondaryText(string.format(buff_data.secondary_label_format,timer_text))
-					else
-						item:SetSecondaryText("")
-					end
 					--todo animate
 					local align = "vertical"
 					if align == "horizontal" then 

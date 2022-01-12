@@ -130,6 +130,10 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 					MenuCallbackHandler[callback_name] = function(self,item)
 						local item_value = item:value() == "on"
 						KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
+						if buff_data.upd_func then 
+							KineticTrackerCore:AddBuff(buff_name,{enabled=item_value})
+						end
+						
 						KineticTrackerCore:SaveSettings()
 					end
 					table.insert(submenu_option_items,1,{
@@ -151,7 +155,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 					local callback_name = "callback_" .. option_id
 					MenuCallbackHandler[callback_name] = function(self,item)
 						local item_value = tonumber(item:value())
-						KineticTrackerCore.settings.buff[buff_name][var_name] = item_value
+						KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
 						KineticTrackerCore:SaveSettings()
 					end
 					

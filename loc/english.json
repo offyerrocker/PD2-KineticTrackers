@@ -40,8 +40,10 @@
 	"menu_kitr_buff_option_generic_toggle_enabled_desc" : "If enabled, this buff can visually appear on your buff tracker.",
 	"menu_kitr_buff_option_generic_toggle_timer_title" : "Show Timer",
 	"menu_kitr_buff_option_generic_toggle_timer_desc" : "If enabled, this buff can display its timer.",
+	"menu_kitr_buff_option_generic_slider_value_threshold_title" : "Minimum Value",
+	"menu_kitr_buff_option_generic_slider_value_threshold_desc" : "The buff will only display if above this value",
 	
-	"menu_kitr_buff_option_generic_multiplechoice_timer_display_minutes_title" : "Set Timer Minutes/Seconds Display",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_display_minutes_title" : "Time Display",
 	"menu_kitr_buff_option_generic_multiplechoice_timer_display_minutes_desc" : "Change how buff timers are displayed",
 	
 	"menu_kitr_buff_option_generic_slider_timer_precision_title" : "Set Timer Minutes/Seconds Display",
