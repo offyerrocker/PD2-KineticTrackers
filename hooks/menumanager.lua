@@ -34,7 +34,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 				end
 			end
 		else
-			KineticTrackerCore.settings.buffs[buff_name] = table.deep_map_copy(KineticTrackerCore.default_settings.buffs[buff_name])
+			KineticTrackerCore.settings.buffs[buff_name] = table.deep_map_copy(KineticTrackerCore.default_settings.buffs[buff_name] or {})
 			buff_display_setting = KineticTrackerCore.settings.buffs[buff_name]
 		end
 	

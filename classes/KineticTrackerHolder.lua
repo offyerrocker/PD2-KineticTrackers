@@ -60,12 +60,13 @@ function KineticTrackerHolder:AddBuff(id,params)
 	
 	local buff_tweakdata = id and self.tweak_data[id]
 	local buff_display_setting = self._core:GetBuffDisplaySettings(id)
---	if buff_tweakdata.disabled or buff_display_setting.disabled then 
---	if not buff_display_setting.enabled then 
---		return
---	end
-	local existing_buff_data = self:GetBuff(id)
+	if buff_tweakdata.disabled then 
+		--don't keep track of hard-disabled buffs;
+		--unlike soft-disabled buffs, these have no possibility of being re-enabled in a session
+		return
+	end
 	
+	local existing_buff_data = self:GetBuff(id)
 	if existing_buff_data then 
 		self:SetBuff(id,params,existing_buff_data)
 		return
@@ -86,9 +87,16 @@ function KineticTrackerHolder:AddBuff(id,params)
 	local secondary_label_format = "%0.1f"
 	local primary_label_format = buff_tweakdata.display_format or ""
 	local buff_label = managers.localization:text(buff_tweakdata.text_id)
-	if show_timer and params.end_t then 
+	local end_t = params.end_t
+	local duration = params.duration
+	if show_timer then 
 		local t = Application:time()
-		secondary_label = string.format(secondary_label_format,params.end_t - t)
+		if end_t then 
+			secondary_label = string.format(secondary_label_format,end_t - t)
+		elseif duration then 
+			end_t = t + duration
+			secondary_label = string.format(secondary_label_format,duration)
+		end
 	end
 	local value = params.value
 	
@@ -123,9 +131,9 @@ function KineticTrackerHolder:AddBuff(id,params)
 		primary_label_format = primary_label_format,
 		secondary_label_format = secondary_label_format,
 		value = params.value,
-		start_t = params.start_t,
-		end_t = params.end_t,
-		duration = params.duration,
+		start_t = params.start_t, --not used
+		end_t = end_t,
+		duration = duration, --not used
 		show_timer = show_timer,
 		item = new_item,
 		upd_func = buff_tweakdata.upd_func,

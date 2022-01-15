@@ -1,6 +1,29 @@
 --[[
 	todo: 
 	
+	
+		#1 priority
+		straighten out data schema for displayed buff values
+		
+		buffs can have:
+		any number of values? (case-specific)
+			1 value: display value (format with display_format)
+			2 dissimilar values: display values 
+		zero or more timers
+			0: don't display or save a timer
+			1: save a timer value 
+			2+: multi-timer visual only bar
+	
+		
+		any values related to the buff item display should be stored in the buff_data
+		this will allow the items to be recreated midgame
+		
+		
+		per-buff display settings are saved to settings
+		buff_display_setting is an extraneous table generated from per-buff display settings overlaid onto settings
+		this allows "unchanged" values where a player can choose to have global settings (like ACH) which can be overrided on a per-buff basis
+		
+		
 	thinking about making options per-buff specifically now.
 	straighten out buff-enabled setting vs buff data enabled value
 	
@@ -532,6 +555,17 @@ KineticTrackerCore.default_settings = {
 			color = "ffffff"
 		},
 		second_wind = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		second_wind_aced = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
@@ -1473,6 +1507,19 @@ function KineticTrackerCore.concat_tbl_with_keys(a,pairsep,setsep,...)
 end
 
 
+function KineticTrackerCore.get_temporary_property_time(self,prop,default)
+	local time = Application:time()
+
+	if self._properties[prop] and time <= self._properties[prop][2] then
+		return self._properties[prop][2]
+	elseif self._properties[prop] then
+		self._properties[prop] = nil
+	end
+
+	return default
+end
+
+
 -------------------------------------------------------------
 --*********************    I/O    *********************--
 -------------------------------------------------------------
@@ -1661,7 +1708,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 	self.buff_id_lookups = {
 		property = {
 			revive_damage_reduction = "combat_medic", --while reviving other player
-			shock_and_awe_reload_multiplier = "lock_n_load"
+			shock_and_awe_reload_multiplier = "lock_n_load",
+			trigger_happy = "trigger_happy",
+			desperado = "desperado",
+			copr_risen = "leech",
+			copr_risen_cooldown_added = "leech_cooldown"
 		},
 		temporary_property = {
 			revive_damage_reduction = "painkillers" --needs testing
@@ -1685,7 +1736,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				increased_movement_speed = "running_from_death_aced",
 				swap_weapon_faster = "running_from_death_basic_swap_speed",
 				reload_weapon_faster = "running_from_death_basic_reload_speed",
-				berserker_damage_multiplier = "swan_song"
+				berserker_damage_multiplier = "swan_song",
+				team_damage_speed_multiplier_received = "second_wind_team" --second wind aced (from team)
 			}
 		},
 		cooldown_upgrade = {
@@ -2348,7 +2400,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		dire_chance = { --dire need (stagger chance when armor is broken)
-			disabled = true,
+			disabled = false,
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_dire_need_beta",
@@ -2360,7 +2412,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2f"
 		},
 		second_wind = { --second wind (speed bonus on armor break)
-			disabled = true,
+			disabled = false,
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_scavenger_beta",
@@ -2371,9 +2423,20 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			},
 			display_format = "%0.2fx"
 		},
+		second_wind_aced = {
+			disabled = false,
+			show_timer = false,
+			source = "skill",
+			text_id = "menu_scavenger_beta",
+			icon_data = {
+				source = "skill",
+				skill_id = "scavenger",
+				tree = 4
+			}
+		},
 --needs a cooldown timer/timer til proc, and effect timer
 		unseen_strike = { --unseen strike (crit chance when not taking damage)
-			disabled = true,
+			disabled = false,
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_unseen_strike_beta",
@@ -2387,7 +2450,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 	
 	--fugitive
 		desperado = { --desperado (stacking accuracy bonus per hit for pistols)
-			disabled = true,
+			disabled = false,
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_expert_handling",
@@ -2396,10 +2459,13 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "expert_handling",
 				tree = 5
 			},
-			display_format = "%0.2fx"
+			modify_value_func = function(n)
+				return (1 - n) * 100
+			end,
+			display_format = "%0.2f%%"
 		},
 		trigger_happy = { --trigger happy (stacking damage bonus per hit for pistols)
-			disabled = true,
+			disabled = false,
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_trigger_happy_beta",
@@ -2408,7 +2474,10 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "trigger_happy",
 				tree = 5
 			},
-			display_format = "%0.2fx"
+			modify_value_func = function(n)
+				return n * 100
+			end,
+			display_format = "%0.2f%%"
 		},
 		running_from_death_basic_reload_speed = { --running_from_death (basic: reload/swap speed bonus after being revived; aced: move speed bonus after being revived)
 			disabled = false,
@@ -2939,6 +3008,17 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--leech 
 		leech = { --leech throwable, temp invuln on healthgate
+			disabled = true, --not implemented
+			source = "perk",
+			text_id = "menu_deck22_1",
+			icon_data = {
+				source = "perk",
+				tree = 22,
+				card = 1
+			},
+			display_format = ""
+		},
+		leech_cooldown = { --leech throwable, temp invuln on healthgate
 			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck22_1",

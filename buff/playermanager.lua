@@ -12,6 +12,25 @@ Hooks:PostHook(PlayerManager,"set_property","noblehud_set_property",function(sel
 	end
 end)
 
+Hooks:PostHook(PlayerManager,"mul_to_property","noblehud_set_property",function(self,name,value)
+	local buff_id = KineticTrackerCore:GetBuffIdFromProperty(name)
+	if buff_id then 
+		local current_value = self:get_property(name)
+		KineticTrackerCore:AddBuff(buff_id,{value=current_value})
+	else
+		KineticTrackerCore:Log("PlayerManager:mul_to_property(" .. tostring(name) .. "," .. tostring(value) .. ")",{color=Color.yellow})
+	end
+end)
+
+Hooks:PostHook(PlayerManager,"add_to_property","noblehud_set_property",function(self,name,value)
+	local buff_id = KineticTrackerCore:GetBuffIdFromProperty(name)
+	if buff_id then 
+		local current_value = self:get_property(name)
+		KineticTrackerCore:AddBuff(buff_id,{value=current_value})
+	else
+		KineticTrackerCore:Log("PlayerManager:add_to_property(" .. tostring(name) .. "," .. tostring(value) .. ")",{color=Color.yellow})
+	end
+end)
 
 Hooks:PostHook(PlayerManager,"remove_property","noblehud_remove_property",function(self,name)
 	local buff_id = KineticTrackerCore:GetBuffIdFromProperty(name)
@@ -24,10 +43,9 @@ end)
 
 Hooks:PostHook(PlayerManager,"activate_temporary_upgrade","noblehud_activate_temporary_upgrade",function(self,category, upgrade)
 	local buff_id = KineticTrackerCore:GetBuffIdFromTemporaryUpgrade(category,upgrade)
-	local end_t,value
+	local end_t = self:get_activate_temporary_expire_time(category,upgrade)
+	local value = self:temporary_upgrade_value(category,upgrade)
 	if buff_id then 
-		end_t = self:get_activate_temporary_expire_time(category,upgrade)
-		value = self:temporary_upgrade_value(category,upgrade)
 		KineticTrackerCore:AddBuff(buff_id,{end_t = end_t,value = value}) --i'd have to re-calculate stuff or overwrite the function to use duration instead of end_t. i'd rather risk having desynced end times
 	else
 		KineticTrackerCore:Log("PlayerManager:activate_temporary_upgrade(" .. KineticTrackerCore.concat_tbl_with_keys({category=category,upgrade=upgrade,end_t=end_t,value=value},",","=") .. ")",{color=Color.yellow})
@@ -45,10 +63,9 @@ end)
 
 Hooks:PostHook(PlayerManager,"activate_temporary_upgrade_by_level","noblehud_activate_temporary_upgrade_by_level",function(self,category, upgrade, level)
 	local buff_id = KineticTrackerCore:GetBuffIdFromTemporaryUpgrade(category,upgrade)
-	local end_t,value
+	local end_t = self:get_activate_temporary_expire_time(category,upgrade)
+	local value = self:temporary_upgrade_value(category,upgrade,0)
 	if buff_id then 
-		end_t = self:get_activate_temporary_expire_time(category,upgrade)
-		value = self:temporary_upgrade_value(category,upgrade,0)
 		KineticTrackerCore:AddBuff(buff_id,{end_t = end_t,value = value})
 	else
 		KineticTrackerCore:Log("PlayerManager:activate_temporary_upgrade_by_level(" .. KineticTrackerCore.concat_tbl_with_keys({category=category,upgrade=upgrade,level=level,end_t=end_t,value=value},",","=") .. ")",{color=Color.yellow})
@@ -58,7 +75,9 @@ end)
 Hooks:PostHook(PlayerManager,"add_to_temporary_property","noblehud_add_temporary_property",function(self,name, time, value)
 	local buff_id = KineticTrackerCore:GetBuffIdFromTemporaryProperty(name)
 	if buff_id then 
-		KineticTrackerCore:AddBuff(buff_id,{duration = time,value=value})
+		local current_time = KineticTrackerCore.get_temporary_property_time(self._temporary_properties,name,time)
+		local current_value = self:get_temporary_property(name,value)
+		KineticTrackerCore:AddBuff(buff_id,{duration = current_time,value=current_value})
 	else
 		KineticTrackerCore:Log("PlayerManager:add_to_temporary_property(" .. KineticTrackerCore.concat_tbl_with_keys({name=name,time=time,value=value},",","=") .. ")",{color=Color.yellow})
 	end
@@ -91,6 +110,68 @@ Hooks:PostHook(PlayerManager,"disable_cooldown_upgrade","noblehud_disable_cooldo
 	--		logall(upgrade_value)
 		end
 	end
+end)
+
+
+
+-------------------
+--case-specific buffs
+-------------------
+
+
+
+--bloodthirst aced
+Hooks:PostHook(PlayerManager,"_on_enemy_killed_bloodthirst","noblehud_add_temporary_property",function(self,equipped_unit, variant, killed_unit)
+	local name = "bloodthirst_reload_speed"
+	
+	local buff_id = KineticTrackerCore:GetBuffIdFromTemporaryProperty(name)
+	if buff_id then
+		local current_value = self:get_temporary_property(name,value)
+		local time = KineticTrackerCore.get_temporary_property_time(self._temporary_properties,name)
+		KineticTrackerCore:AddBuff(buff_id,{duration=time,value=current_value})
+	end
+end)
+
+
+--trigger happy
+Hooks:PostHook(PlayerManager,"_on_enter_trigger_happy_event","noblehud_buff_trigger_happy",function(self,unit, attack_data)
+	local upgrade_data = self:upgrade_value("pistol", "stacking_hit_damage_multiplier", 0)
+	if upgrade_data ~= 0 then 
+		local max_time = upgrade_data.max_time
+		local value = self:get_property("trigger_happy")
+		
+		local buff_id = KineticTrackerCore:GetBuffIdFromProperty("trigger_happy")
+		KineticTrackerCore:AddBuff(buff_id,{value=value,duration = max_time})
+	end
+end)
+
+--desperado basic
+Hooks:PostHook(PlayerManager,"_on_expert_handling_event","noblehud_buff_desperado",function(self,unit, attack_data)
+
+	local upgrade_data = self:upgrade_value("pistol", "stacked_accuracy_bonus", 0)
+	if upgrade_data ~= 0 then 
+		local max_time = upgrade_data.max_time
+		local value = self:get_property("desperado")
+		
+		local buff_id = KineticTrackerCore:GetBuffIdFromProperty("desperado")
+		KineticTrackerCore:AddBuff(buff_id,{value=value,duration = max_time})
+		--specifically do not override timer as end_t since desperado's timer doesn't refresh on hit
+	end
+
+
+
+--[[
+	local attacker_unit = attack_data.attacker_unit
+	local variant = attack_data.variant
+
+	if attacker_unit == self:player_unit() and self:is_current_weapon_of_category("pistol") and variant == "bullet" and not self._coroutine_mgr:is_running(PlayerAction.ExpertHandling) then
+		local data = self:upgrade_value("pistol", "stacked_accuracy_bonus", nil)
+
+		if data and type(data) ~= "number" then
+			NobleHUD:AddBuff("desperado",{end_t = Application:time() + data.max_time,value = data.max_stacks})
+		end
+	end
+	--]]
 end)
 
 do return end
@@ -129,17 +210,6 @@ Hooks:PreHook(PlayerManager,"on_headshot_dealt","noblehud_buff_bullseye",functio
 			NobleHUD:AddBuff("bullseye",{duration = (tweak_data.upgrades.on_headshot_dealt_cooldown or 0)})
 		end
 	end
-end)
-
-Hooks:PreHook(PlayerManager,"_on_enemy_killed_bloodthirst","noblehud_buff_bloodthirst",function(self,equipped_unit,variant,killed_unit)
-	if variant == "melee" then
-		local data = self:upgrade_value("player", "melee_kill_increase_reload_speed", 0)
-		if data ~= 0 then 
---			NobleHUD:log("bloodthirst [1] = " .. tostring(data[1]) .. ",[2] = " .. tostring(data[2]))
-			NobleHUD:AddBuff("bloodthirst_reload_speed",{duration=data[2]})
-		end
-	end	
---	managers.player:has_active_temporary_property("melee_kill_increase_reload_speed")
 end)
 
 Hooks:PostHook(PlayerManager,"reset_melee_dmg_multiplier","noblehud_buff_bloodthirst_melee_remove",function(self)
