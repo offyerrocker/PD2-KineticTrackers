@@ -1,8 +1,7 @@
 --[[
 	todo: 
 	
-	
-		#1 priority
+	#1 priority
 		straighten out data schema for displayed buff values
 		
 		buffs can have:
@@ -24,14 +23,32 @@
 		this allows "unchanged" values where a player can choose to have global settings (like ACH) which can be overrided on a per-buff basis
 		
 		
+		
+		
+		
+		
+		
+		
+		
 	thinking about making options per-buff specifically now.
 	straighten out buff-enabled setting vs buff data enabled value
 	
 	
-	create individual entries per buff in each skilltree/perkdeck?
-	OR 
-	aggregate everything and slap a divider after each new one
 	
+	different display modes for buffs overall:
+		orientation
+			top-to-bottom
+			bottom-to-top
+			left-to-right
+			right-to-left
+			center horizontal
+			center vertical
+		style:
+			warframe (icons)
+			destiny (list)
+		transform:
+			size
+			position
 	
 	buff_setting = {
 		enabled = true,
@@ -44,6 +61,14 @@
 		timer_flashing_speed = 1,
 		color = "ffd700"
 	}
+	
+	for updating values:
+		upd_func
+	for changing values or timers in cases where the add/proc hook matches the schema but value does not (eg. mul is a reciprocal, timer is a direct duration value, value is 1-n instead)
+		modify_value_func 
+		modify_timer_func 
+	for getting the display string from one or more buff values:
+		format_values_func
 	
 	
 	
@@ -199,6 +224,17 @@ KineticTrackerCore.default_settings = {
 	palettes = table.deep_map_copy(KineticTrackerCore.default_palettes),
 	multiplechoice_setting = 1,
 	buffs = {
+		TEMPLATE = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_minutes_display = 1,--1 = minutes, 2 = seconds
+			timer_precision = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
 		absorption = {
 			enabled = true,
 			value_threshold = 2,
@@ -247,17 +283,6 @@ KineticTrackerCore.default_settings = {
 		melee_damage_bonus = {
 			enabled = false,
 			value_threshold = 0,
-			color = "ffffff"
-		},
-		TEMPLATE = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_minutes_display = 1,--1 = minutes, 2 = seconds
-			timer_precision = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
 			color = "ffffff"
 		},
 		ecm_jammer = {
@@ -1506,7 +1531,6 @@ function KineticTrackerCore.concat_tbl_with_keys(a,pairsep,setsep,...)
 	return s
 end
 
-
 function KineticTrackerCore.get_temporary_property_time(self,prop,default)
 	local time = Application:time()
 
@@ -1518,7 +1542,6 @@ function KineticTrackerCore.get_temporary_property_time(self,prop,default)
 
 	return default
 end
-
 
 -------------------------------------------------------------
 --*********************    I/O    *********************--
@@ -1785,9 +1808,10 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			disabled = false,
 			source = "general",
 			text_id = "menu_kitr_buff_damage_absorption_title",
-			upd_func = function(t,dt,display_setting,buff_data)
+			upd_func = function(t,dt,values,display_setting,buff_data)
 				return managers.player:damage_absorption()
 			end,
+			modify_timer_func = nil,
 			modify_value_func = function(n)
 				return n * 10
 			end,
@@ -1803,7 +1827,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			source = "general",
 --			text_id = "menu_jail_diet_beta",
 			text_id = "menu_kitr_buff_dodge_chance_title",
-			upd_func = function(t,dt,display_setting,buff_data)
+			upd_func = function(t,dt,values,display_setting,buff_data)
 				local pm = managers.player
 				local player = pm:local_player()
 				local movement_ext = player:movement()
@@ -1824,7 +1848,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			source = "general",
 			text_id = "menu_kitr_buff_crit_chance_title",
 --			text_id = "menu_backstab_beta",
-			upd_func = function(t,dt,display_setting,buff_data)
+			upd_func = function(t,dt,values,display_setting,buff_data)
 				local pm = managers.player
 				
 				local detection_risk = math.round(managers.blackmarket:get_suspicion_offset_from_custom_data({
@@ -1846,7 +1870,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			disabled = false,
 			source = "general",
 			text_id = "menu_kitr_buff_damage_resistance_title",
-			upd_func = function(t,dt,display_setting,buff_data)
+			upd_func = function(t,dt,values,display_setting,buff_data)
 				return (1 - managers.player:damage_reduction_skill_multiplier())
 			end,
 			modify_value_func = function(n)
@@ -1863,12 +1887,20 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			source = "general",
 			text_id = "menu_kitr_buff_fixed_health_regen_title",
 			show_timer = true,
-			upd_func = function(t,dt,display_setting,buff_data)
+			upd_func = function(t,dt,values,display_setting,buff_data)
 				local pm = managers.player
 				local player = pm:local_player()
 				local dmg_ext = player:character_damage()
-				local time_left = dmg_ext._health_regen_update_timer or 0
-				return pm:fixed_health_regen(),time_left
+				return pm:fixed_health_regen()
+			end,
+			format_values_func = function(values,buff_display_setting)
+				--
+			end,
+			modify_timer_func = function(timer)
+				local pm = managers.player
+				local player = pm:local_player()
+				local dmg_ext = player:character_damage()
+				return dmg_ext._health_regen_update_timer or 0 
 			end,
 			modify_value_func = function(n)
 				return n * 100
@@ -1884,12 +1916,18 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			source = "general",
 			text_id = "menu_kitr_buff_health_regen_title",
 			show_timer = true,
-			upd_func = function(t,dt,display_setting,buff_data)
+			upd_func = function(t,dt,values,display_setting,buff_data)
 				local pm = managers.player
 				local player = pm:local_player()
 				local dmg_ext = player:character_damage()
 				local time_left = dmg_ext._health_regen_update_timer or 0
-				return pm:health_regen(),time_left
+				values[1] = pm:health_regen()
+			end,
+			modify_timer_func = function()
+				local pm = managers.player
+				local player = pm:local_player()
+				local dmg_ext = player:character_damage()
+				return dmg_ext._health_regen_update_timer or 0 
 			end,
 			modify_value_func = function(n)
 				return n * 10
@@ -1908,13 +1946,13 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			source = "general",
 			text_id = "menu_kitr_buff_weapon_reload_speed_multiplier",
 			show_timer = false,
-			upd_func = function(t,dt,display_setting,buff_data)
+			upd_func = function(t,dt,values,display_setting,buff_data)
 				local player = managers.player:local_player()
 				local inv_ext = player:inventory()
 				local equipped_unit = inv_ext:equipped_unit()
 				if alive(equipped_unit) then 
 					local base = equipped_unit:base()
-					return base and base:reload_speed_multiplier()
+					values[1] = base and base:reload_speed_multiplier() or values[1]
 				end
 			end,
 			modify_value_func = function(n)
@@ -1931,13 +1969,13 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			source = "general",
 			text_id = "menu_kitr_buff_weapon_damage_multiplier",
 			show_timer = false,
-			upd_func = function(t,dt,display_setting,buff_data)
+			upd_func = function(t,dt,values,display_setting,buff_data)
 				local player = managers.player:local_player()
 				local inv_ext = player:inventory()
 				local equipped_unit = inv_ext:equipped_unit()
 				if alive(equipped_unit) then 
 					local base = equipped_unit:base()
-					return base and base:damage_multiplier()
+					values[1] = base and base:damage_multiplier() or values[1]
 				end
 			end,
 			modify_value_func = function(n)
@@ -1954,8 +1992,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			source = "general",
 			text_id = "menu_kitr_buff_weapon_accuracy_multiplier",
 			show_timer = false,
-			upd_func = function(t,dt,display_setting,buff_data)
-				return managers.player:get_accuracy_multiplier()
+			upd_func = function(t,dt,values,display_setting,buff_data)
+				values[1] = managers.player:get_accuracy_multiplier()
 			end,
 			modify_value_func = function(n)
 				return n * 100
@@ -1971,8 +2009,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			source = "general",
 			text_id = "menu_kitr_buff_melee_damage_multiplier",
 			show_timer = false,
-			upd_func = function(t,dt,display_setting,buff_data)
-				return managers.player:get_melee_dmg_multiplier()
+			upd_func = function(t,dt,values,display_setting,buff_data)
+				values[1] = managers.player:get_melee_dmg_multiplier()
 			end,
 			modify_value_func = function(n)
 				return n * 100
@@ -1989,7 +2027,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			disabled = true,
 			source = "general",
 			text_id = "menu_ecm_2x_beta",
-			upd_func = function(t,dt,display_setting,buff_data)
+			upd_func = function(t,dt,values,display_setting,buff_data)
 				local threshold = display_setting.value_threshold
 				local groupaistate = managers.groupai:state()
 				local ecm_jammers = groupaistate._ecm_jammers
@@ -2000,6 +2038,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					
 --					end
 				end
+--				values[1] = "example"
 			end,
 			icon_data = {
 				source = "skill",
@@ -2895,6 +2934,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			disabled = true, --not implemented
 			source = "perk",
 			text_id = "menu_deck16_1",
+			upd_func = function(t,dt,values,display_setting,buff_data)
+				
+			end,
+			format_values_func = function(values,display_setting)
+				return string.format("x%i",#values)
+			end,
 			icon_data = {
 				source = "perk",
 				tree = 16,

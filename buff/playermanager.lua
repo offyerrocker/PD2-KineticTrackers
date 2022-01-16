@@ -152,26 +152,10 @@ Hooks:PostHook(PlayerManager,"_on_expert_handling_event","noblehud_buff_desperad
 	if upgrade_data ~= 0 then 
 		local max_time = upgrade_data.max_time
 		local value = self:get_property("desperado")
-		
 		local buff_id = KineticTrackerCore:GetBuffIdFromProperty("desperado")
 		KineticTrackerCore:AddBuff(buff_id,{value=value,duration = max_time})
 		--specifically do not override timer as end_t since desperado's timer doesn't refresh on hit
 	end
-
-
-
---[[
-	local attacker_unit = attack_data.attacker_unit
-	local variant = attack_data.variant
-
-	if attacker_unit == self:player_unit() and self:is_current_weapon_of_category("pistol") and variant == "bullet" and not self._coroutine_mgr:is_running(PlayerAction.ExpertHandling) then
-		local data = self:upgrade_value("pistol", "stacked_accuracy_bonus", nil)
-
-		if data and type(data) ~= "number" then
-			NobleHUD:AddBuff("desperado",{end_t = Application:time() + data.max_time,value = data.max_stacks})
-		end
-	end
-	--]]
 end)
 
 do return end

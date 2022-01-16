@@ -4,6 +4,26 @@ Hooks:Register("KineticTrackers_OnBuffDataLoaded")
 
 KineticTrackerHolder = KineticTrackerHolder or class()
 
+function KineticTrackerHolder.format_time(seconds,precision,show_minutes)
+	local str = ""
+	local SECONDS_ABBREV_STR = "s"
+	local seconds_format = "%02d"
+	local minutes_format = "%02i"
+	if precision > 0 then 
+--		seconds_format = "%02." .. string.format("%i",precision) .. "f"
+		seconds_format = seconds_format .. string.format(".%02i",(seconds - math.floor(seconds)) * math.pow(10,precision))
+	end
+	
+	if show_minutes then 
+		local _minutes = math.min(seconds / 60,99)
+		local _seconds = seconds % 60
+		str = string.format(minutes_format .. ":" .. seconds_format,_minutes,_seconds)
+	else
+		str = string.format(seconds_format,seconds) .. SECONDS_ABBREV_STR
+	end
+	
+	return str
+end
 
 function KineticTrackerHolder:init(core)
 	self._core = core
@@ -52,6 +72,9 @@ function KineticTrackerHolder:SetBuff(id,params,buff_data)
 			self:Log("Skipped params overwrite in SetBuff(" .. tostring(id) .. ") for param " .. tostring(k) .. "=" .. tostring(v) .. " (table value)")
 		end
 	end
+	if params.value then 
+		buff_data.values[1] = params.value
+	end
 	--refresh visually
 end
 
@@ -82,32 +105,53 @@ function KineticTrackerHolder:AddBuff(id,params)
 	end
 	local color = buff_display_setting.color
 	local show_timer = buff_tweakdata.show_timer
+	local buff_label = managers.localization:text(buff_tweakdata.text_id)
 	local primary_label = ""
 	local secondary_label = ""
-	local secondary_label_format = "%0.1f"
 	local primary_label_format = buff_tweakdata.display_format or ""
 	local buff_label = managers.localization:text(buff_tweakdata.text_id)
 	local end_t = params.end_t
 	local duration = params.duration
+	
+	local timer_precision = buff_display_setting.timer_precision or 0
+	local timer_minutes_display = buff_display_setting.timer_minutes_display == 1
+
 	if show_timer then 
 		local t = Application:time()
 		if end_t then 
-			secondary_label = string.format(secondary_label_format,end_t - t)
+			duration = end_t - t
+			if buff_tweakdata.modify_timer_func then 
+				duration = buff_tweakdata.modify_timer_func(duration)
+			end
 		elseif duration then 
 			end_t = t + duration
-			secondary_label = string.format(secondary_label_format,duration)
+		end
+		if duration then 
+			primary_label = self.format_time(duration,timer_precision,timer_minutes_display) or primary_label
 		end
 	end
-	local value = params.value
+	local value
+	local values = params.values or {
+		params.value
+	}
 	
-	if type(value) == "number" then
-		if buff_tweakdata.modify_value_func then 
-			value = buff_tweakdata.modify_value_func(value)
+	--any buff that has more than 1 value must have a custom buff display format
+	if buff_tweakdata.format_values_func then 
+		secondary_label = buff_tweakdata.format_values_func(values,buff_display_setting) or "ERROR"
+	else
+		value = values[1]
+		if type(value) == "number" then 
+			if buff_tweakdata.modify_value_func then 
+				value = buff_tweakdata.modify_value_func(value)
+			end
+			
+			if buff_tweakdata.display_format then 
+				secondary_label = string.format(buff_tweakdata.display_format,value) or "ERROR"
+			end
+		else
+			--non-number value formatting (eg. boolean, string)
 		end
-		primary_label = string.format(primary_label_format,value) or primary_label
 	end
-	
---	local buff_panel = self:CreateBuff(id,buff_tweakdata)
 	
 	local new_item = KineticTrackerItem:new({
 		id = id,
@@ -129,29 +173,21 @@ function KineticTrackerHolder:AddBuff(id,params)
 		id = id,
 		enabled = enabled,
 		primary_label_format = primary_label_format,
-		secondary_label_format = secondary_label_format,
-		value = params.value,
+--		secondary_label_format = secondary_label_format,
+		value = value, --
+		values = values,
 		start_t = params.start_t, --not used
 		end_t = end_t,
 		duration = duration, --not used
 		show_timer = show_timer,
 		item = new_item,
 		upd_func = buff_tweakdata.upd_func,
+		format_values_func = buff_tweakdata.format_values_func,
 		modify_value_func = buff_tweakdata.modify_value_func
 	}
 	
 	table.insert(self._buffs,priority,buff_data)
 end
-
---[[
-function KineticTrackerHolder:RemoveBuff(id)
-	for i,buff_data in pairs(self._buffs) do 
-		if buff_data.id == id then 
-			return table.remove(self._buffs,i)
-		end
-	end
-end
---]]
 
 function KineticTrackerHolder:_RemoveBuff(id)
 	for i,buff_data in pairs(self._buffs) do 
@@ -196,40 +232,65 @@ function KineticTrackerHolder:Update(t,dt)
 				local item = buff_data.item
 				local panel = item._panel
 				local buff_display_setting = self._core:GetBuffDisplaySettings(id)
-				
-				local value = buff_data.value
-				local end_t = buff_data.end_t
-				local duration_remaining
-				local timer_text
-				if end_t then 
-					timer_text = end_t - t
-				end
-				
+
 				local hidden = false
 				local below_threshold
 				local disabled_by_user = not buff_data.enabled
+				local values = buff_data.values
+								
+				local primary_text_string,secondary_text_string
+				
+				--calculate timer
+				local end_t = buff_data.end_t
+				local timer_value
+				local timer_precision = buff_display_setting.timer_precision
+				local timer_minutes_display = buff_display_setting.timer_minutes_display == 1
+				if end_t then 
+					timer_value = end_t - t
+				end
+				if timer_value then 
+					if buff_data.modify_timer_func then 
+						timer_value = buff_data.modify_timer_func(timer_value)
+					end
+					secondary_text_string = self.format_time(timer_value,timer_precision,timer_minutes_display)
+				end
 				
 				if buff_data.upd_func then 
-					local _timer_text
-					value,_timer_text = buff_data.upd_func(t,dt,buff_display_setting,buff_data)
-					timer_text = _timer_text or timer_text
+--					buff_data.upd_func(t,dt,values,buff_display_setting,buff_data)
+					values = { buff_data.upd_func(t,dt,values,buff_display_setting,buff_data) } 
+
 				end
-				
-				if type(value) == "number" then 
-					if buff_data.modify_value_func then 
-						value = buff_data.modify_value_func(value)
-					end
-					if (not buff_display_setting.value_threshold) or (value > buff_display_setting.value_threshold) then 
-						item:SetPrimaryText(string.format(buff_data.primary_label_format,value))
-					else
-						below_threshold = true
-					end
+				if buff_data.format_values_func then 
+					primary_text_string = buff_data.format_values_func(values,buff_data,buff_display_setting)
 				else
-					item:SetPrimaryText("")
+					local value = values[1]
+					if type(value) == "number" then 
+						if buff_data.modify_value_func then 
+							value = buff_data.modify_value_func(value)
+						end
+						if (not buff_display_setting.value_threshold) or (value > buff_display_setting.value_threshold) then 
+							if buff_data.primary_label_format then 
+								primary_text_string = string.format(buff_data.primary_label_format,value) or "ERROR"
+							end
+						else
+							below_threshold = true
+						end
+						
+
+					else
+						--non-number value formatting (eg. boolean, string)
+					end
 				end
 				
-				if buff_data.show_timer and buff_display_setting.timer_enabled and timer_text then 
-					item:SetSecondaryText(string.format(buff_data.secondary_label_format,timer_text))
+				if primary_text_string then 
+					item:SetPrimaryText(primary_text_string)
+				else
+--					item:SetPrimaryText("")
+				end
+				
+				
+				if buff_data.show_timer and buff_display_setting.timer_enabled and secondary_text_string then 
+					item:SetSecondaryText(secondary_text_string)
 				else
 					item:SetSecondaryText("")
 				end
@@ -256,5 +317,3 @@ function KineticTrackerHolder:Update(t,dt)
 		end
 	end
 end
-
---KineticTrackerHolder:AddBuff("")
