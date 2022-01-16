@@ -4,7 +4,21 @@ Hooks:Register("KineticTrackers_OnBuffDataLoaded")
 
 KineticTrackerHolder = KineticTrackerHolder or class()
 
+KineticTrackerHolder.STYLES = {
+	KineticTrackerItemDestiny,
+	KineticTrackerItemWarframe
+}
+
 function KineticTrackerHolder.format_time(seconds,precision,show_minutes)
+
+--	local style_index = 1
+--	local item_styles = {
+--		KineticTrackerItemDestiny,
+--		KineticTrackerItemWarframe
+--	}
+--	self._item_style = item_styles[style_index]
+--	self._item_style = self.STYLES[style_index]
+
 	local str = ""
 	local SECONDS_ABBREV_STR = "s"
 	local seconds_format = "%02d"
@@ -73,12 +87,14 @@ function KineticTrackerHolder:SetBuff(id,params,buff_data)
 		end
 	end
 	if params.value then 
+--		self:Log( "SetBuff(" .. tostring(id) .. "): Replaced value " .. tostring(buff_data.values[1]) .. " with " .. tostring(params.value))
 		buff_data.values[1] = params.value
 	end
 	--refresh visually
 end
 
 function KineticTrackerHolder:AddBuff(id,params)
+	
 	local sort_by_priority = false
 	
 	local buff_tweakdata = id and self.tweak_data[id]
@@ -105,11 +121,10 @@ function KineticTrackerHolder:AddBuff(id,params)
 	end
 	local color = buff_display_setting.color
 	local show_timer = buff_tweakdata.show_timer
-	local buff_label = managers.localization:text(buff_tweakdata.text_id)
-	local primary_label = ""
-	local secondary_label = ""
+	local primary_label_string = ""
+	local secondary_label_string = ""
+	local buff_label_string = managers.localization:text(buff_tweakdata.text_id)
 	local primary_label_format = buff_tweakdata.display_format or ""
-	local buff_label = managers.localization:text(buff_tweakdata.text_id)
 	local end_t = params.end_t
 	local duration = params.duration
 	
@@ -127,7 +142,7 @@ function KineticTrackerHolder:AddBuff(id,params)
 			end_t = t + duration
 		end
 		if duration then 
-			primary_label = self.format_time(duration,timer_precision,timer_minutes_display) or primary_label
+			primary_label_string = self.format_time(duration,timer_precision,timer_minutes_display) or primary_label_string
 		end
 	end
 	local value
@@ -137,7 +152,7 @@ function KineticTrackerHolder:AddBuff(id,params)
 	
 	--any buff that has more than 1 value must have a custom buff display format
 	if buff_tweakdata.format_values_func then 
-		secondary_label = buff_tweakdata.format_values_func(values,buff_display_setting) or "ERROR"
+		secondary_label_string = buff_tweakdata.format_values_func(values,buff_display_setting) or "ERROR"
 	else
 		value = values[1]
 		if type(value) == "number" then 
@@ -146,20 +161,22 @@ function KineticTrackerHolder:AddBuff(id,params)
 			end
 			
 			if buff_tweakdata.display_format then 
-				secondary_label = string.format(buff_tweakdata.display_format,value) or "ERROR"
+				secondary_label_string = string.format(buff_tweakdata.display_format,value) or "ERROR"
 			end
 		else
 			--non-number value formatting (eg. boolean, string)
 		end
 	end
 	
+	local item_style_index = 2
 	local new_item = KineticTrackerItem:new({
 		id = id,
-		buff_label = buff_label,
 		parent_panel = self._panel,
+		style_index = item_style_index,
 		icon_data = buff_tweakdata.icon_data,
-		primary_label = primary_label,
-		secondary_label = secondary_label,
+		buff_label_string = buff_label_string,
+		primary_label_string = primary_label_string,
+		secondary_label_string = secondary_label_string,
 		color = color
 	})
 	
@@ -217,6 +234,9 @@ function KineticTrackerHolder:Update(t,dt)
 	if alive(managers.player:local_player()) then 
 		local start_x = 256
 		local start_y = 650
+		local style_data = KineticTrackerItem.STYLES[2]
+		local buff_w = style_data.panel_width
+		local buff_h = style_data.panel_height
 		
 		local _i = #self._buffs
 		for i=#self._buffs,1,-1 do 
@@ -302,11 +322,11 @@ function KineticTrackerHolder:Update(t,dt)
 					--todo animate
 					local align = "vertical"
 					if align == "horizontal" then 
-						local w = 256
+						local w = buff_w
 						panel:set_x(start_x + (w * _i))
 						panel:set_y(start_y)
 					else
-						local h = -32
+						local h = -buff_h
 						panel:set_x(start_x)
 						panel:set_y(start_y + (h * _i))
 					end

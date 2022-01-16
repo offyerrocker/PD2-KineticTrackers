@@ -137,6 +137,9 @@ end)
 
 --trigger happy
 Hooks:PostHook(PlayerManager,"_on_enter_trigger_happy_event","noblehud_buff_trigger_happy",function(self,unit, attack_data)
+	--todo check for the thing actually proccing
+	--this event is called on any CopShot message
+	
 	local upgrade_data = self:upgrade_value("pistol", "stacking_hit_damage_multiplier", 0)
 	if upgrade_data ~= 0 then 
 		local max_time = upgrade_data.max_time
@@ -149,7 +152,9 @@ end)
 
 --desperado basic
 Hooks:PostHook(PlayerManager,"_on_expert_handling_event","noblehud_buff_desperado",function(self,unit, attack_data)
-
+	--todo check for the thing actually proccing
+	--this event is called on any CopShot message
+	
 	local upgrade_data = self:upgrade_value("pistol", "stacked_accuracy_bonus", 0)
 	if upgrade_data ~= 0 then 
 		local max_time = upgrade_data.max_time

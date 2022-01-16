@@ -24,30 +24,56 @@
 		
 		
 		
+	
+	add item style option (link Holder's update and Item:new() call to global style setting)
+	add buff name popup per buff on first activation
+	fix minor margin/2 offset display bug for primary_bg rect object
+		use the rotation trick to bypass clipping?
+	add multi-value display (mainly for biker/grinder)
+	add optional border around buffs:
+		* circle
+		* square
+		* triangle (EXTREMELY SPICY)
+		* custom?
+	show stacks option vs show value option	
+	fix trigger happy/desperado proc (procs on any hit)
+	fix for cases where buff properties are "added" although they are not active and do not have a valid buff display
+		fix bloodthirst proc ("blank" buff always added)
+	
+	custom buff icon sets?
 		
 		
 		
-		
-		
-		
-	thinking about making options per-buff specifically now.
+	thinking about making options per-	specifically now.
 	straighten out buff-enabled setting vs buff data enabled value
 	
 	
 	
 	different display modes for buffs overall:
 		orientation
-			top-to-bottom
-			bottom-to-top
-			left-to-right
-			right-to-left
-			center horizontal
-			center vertical
+			halign
+				* left
+				* center
+				* right
+			
+			halign order:
+				left to right
+				right to left
+			
+			valign 
+				* top
+				* center
+				* bottom
+			
+			valign order:
+				top to bottom
+				bottom to top
+			
 		style:
 			warframe (icons)
 			destiny (list)
 		transform:
-			size
+			size (scale mul)
 			position
 	
 	buff_setting = {
@@ -164,17 +190,31 @@
 				})
 	
 	
-	special case: grinder stacks
-	special case: biker prospect stacks
 	
-	 use user's per-buff show-timer setting and time format string
+	
+	
+	
+	
+	buffs to be added:
+		-todo (recursive; this todo is todo)
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	separate entries for combat_medic property and timed buff to avoid possible conflicts (in practice it's fine but i'd prefer it to be more waterproof)
 	
-	change buff behavior to still add disabled buffs but not show them;
-		this allows buffs to still be accurate if one was present while being enabled/disabled
-	
 	separate equipment trackers? (ecm timers, sentry ammo counts, num tripmines out)
+	
+	
+	
 	
 --]]
 
