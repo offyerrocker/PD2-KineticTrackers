@@ -121,14 +121,16 @@ end)
 
 
 --bloodthirst aced
-Hooks:PostHook(PlayerManager,"_on_enemy_killed_bloodthirst","noblehud_add_temporary_property",function(self,equipped_unit, variant, killed_unit)
+Hooks:PostHook(PlayerManager,"_on_enemy_killed_bloodthirst","kitr_proc_bloodthirst_aced",function(self,equipped_unit, variant, killed_unit)
 	local name = "bloodthirst_reload_speed"
 	
 	local buff_id = KineticTrackerCore:GetBuffIdFromTemporaryProperty(name)
 	if buff_id then
-		local current_value = self:get_temporary_property(name,value)
+		local current_value = self:get_temporary_property(name)
 		local time = KineticTrackerCore.get_temporary_property_time(self._temporary_properties,name)
-		KineticTrackerCore:AddBuff(buff_id,{duration=time,value=current_value})
+		KineticTrackerCore:AddBuff(buff_id,{end_t=time,value=current_value})
+		
+--		KineticTrackerCore:Log("PlayerManager:_on_enemy_killed_bloodthirst(" .. KineticTrackerCore.concat_tbl_with_keys({name=name,time=time,value=current_value},",","=") .. ")",{color=Color.yellow})
 	end
 end)
 

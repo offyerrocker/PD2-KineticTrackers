@@ -1738,7 +1738,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			copr_risen_cooldown_added = "leech_cooldown"
 		},
 		temporary_property = {
-			revive_damage_reduction = "painkillers" --needs testing
+			revive_damage_reduction = "painkillers", --needs testing
+			bloodthirst_reload_speed = "bloodthirst_aced"
 		},
 		temporary_upgrade = {
 			temporary = {
@@ -2128,7 +2129,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2f%%"
 		},
 		inspire_basic = { --inspire basic (move speed + reload speed bonus for teammates you shout at);
-			disabled = true, --not implemented; requires hooking to player movement ext
+			disabled = false, --not implemented; requires hooking to player movement ext
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_inspire_beta",
@@ -2140,7 +2141,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2f"
 		},
 		inspire_basic_cooldown = {
-			disabled = true, --not implemented; requires checking var :rally_skill_data().morale_boost_delay_t in player movement ext
+			disabled = false, --not implemented; requires checking var :rally_skill_data().morale_boost_delay_t in player movement ext
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_inspire_beta",
@@ -2164,7 +2165,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "" --value is 1, which is evidently meaningless, so don't bother showing it
 		},
 		forced_friendship = { --forced friendship (nearby civs give damage absorption)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "skill",
 			text_id = "menu_triathlete_beta",
 			icon_data = {
@@ -2175,7 +2176,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2f"
 		},
 		partners_in_crime = { --partners in crime (extra max health while you have a convert)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "skill",
 			text_id = "menu_control_freak_beta",
 			icon_data = {
@@ -2186,7 +2187,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "+%0.2f%%"
 		},
 		stockholm_syndrome = { --stockholm syndrome (hostages autotrade for your return)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "skill",
 			text_id = "menu_stockholm_syndrome_beta",
 			icon_data = {
@@ -2219,7 +2220,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2f%%"
 		},
 		ammo_efficiency = { --ammo efficiency (consecutive headshots refund ammo); show stacks
-			disabled = true, --not implemented; requires "guessing" or coroutine override
+			disabled = false, --not implemented; requires "guessing" or coroutine override
 			source = "skill",
 			text_id = "menu_single_shot_ammo_return_beta",
 			icon_data = {
@@ -2300,7 +2301,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2f%%"
 		},
 		die_hard = { --die hard basic (damage resist while interacting)
-			disabled = true, --not implemented; requires manual checking via upd_func
+			disabled = false, --not implemented; requires manual checking via upd_func
 			source = "skill",
 			text_id = "menu_show_of_force_beta",
 			icon_data = {
@@ -2311,7 +2312,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2f%%"
 		},
 		bullseye = { --bullseye (armorgate) cooldown
-			disabled = true, --not implemented; requires hooking to playermanager to get var ._on_headshot_dealt_t
+			disabled = false, --not implemented; requires hooking to playermanager to get var ._on_headshot_dealt_t
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_prison_wife_beta",
@@ -2323,7 +2324,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		scavenger = { --scavenger aced: extra ammo box every 6 kills
-			disabled = true, --not implemented; requires hooking to playermanager to get var ._num_kills % ._target_kills
+			disabled = false, --not implemented; requires hooking to playermanager to get var ._num_kills % ._target_kills
 			source = "skill",
 			text_id = "menu_scavenging_beta",
 			icon_data = {
@@ -2334,7 +2335,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		bullet_storm = { --bulletstorm (temp don't consume ammo after using your ammo bags)
-			disabled = true,
+			disabled = false,
 			source = "skill",
 			text_id = "menu_ammo_reservoir_beta",
 			icon_data = {
@@ -2345,7 +2346,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		fully_loaded = { --fully loaded aced (escalating throwable restore chance from ammo boxes)
-			disabled = true, --not implemented; requires guessing FullyLoaded coroutine
+			disabled = false, --not implemented; requires guessing FullyLoaded coroutine
 			source = "skill",
 			text_id = "menu_bandoliers_beta",
 			icon_data = {
@@ -2358,7 +2359,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 
 --technician
 		hardware_expert = { --hardware expert (drill upgrades)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "skill",
 			text_id = "menu_hardware_expert_beta",
 			icon_data = {
@@ -2369,7 +2370,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		drill_sawgeant = { --drill sawgeant (drill upgrades)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "skill",
 			text_id = "menu_drill_expert_beta",
 			icon_data = {
@@ -2380,7 +2381,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		kick_starter = { --kickstarter (drill upgrades); also show when a drill has attempted kickstarter
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "skill",
 			text_id = "menu_kick_starter_beta",
 			icon_data = {
@@ -2391,7 +2392,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		fire_control = { --fire control (basic: accuracy while hipfiring; aced: accuracy penalty reduction when moving)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "skill",
 			text_id = "menu_fire_control_beta",
 			icon_data = {
@@ -2402,7 +2403,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2fx"
 		},
 		lock_n_load = { --lock n' load aced (reload time reduction after autofire kills with lmg/ar/smg/specials )
-			disabled = true,
+			disabled = false,
 			source = "skill",
 			text_id = "menu_shock_and_awe_beta",
 			icon_data = {
@@ -2415,7 +2416,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		
 	--ghost
 		chameleon = { --sixth sense basic (mark nearby enemies)
-			disabled = true, --not implemented; requires hooking to playerstandard:_update_omniscience()
+			disabled = false, --not implemented; requires hooking to playerstandard:_update_omniscience()
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_chameleon_beta",
@@ -2427,7 +2428,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "%0.2f" --show number of nearby enemies?
 		},
 		second_chances = { --nimble basic (camera loop)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_second_chances_beta",
@@ -2582,7 +2583,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = "" --the value given is 1, as a damage multiplier, so don't bother showing it
 		},
 		messiah = { --messiah: kill an enemy to self-revive
-			disabled = true, --not implemented; requires hooking to playermanager to get var ._messiah_charges
+			disabled = false, --not implemented; requires hooking to playermanager to get var ._messiah_charges
 			source = "skill",
 			text_id = "menu_pistol_beta_messiah",
 			icon_data = {
@@ -2593,7 +2594,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		bloodthirst_basic = { --bloodthirst basic: stacking melee damage bonus per kill
-			disabled = true, --not implemented; requires guessing coroutine playerbloodthirstbase
+			disabled = false, --not implemented; requires guessing coroutine playerbloodthirstbase
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_bloodthirst",
 			icon_data = {
@@ -2604,7 +2606,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		bloodthirst_aced = { --bloodthirst aced: reload speed bonus on melee kill
-			disabled = true, --not implemented; requires guessing coroutine playerbloodthirstbase
+			disabled = false,
+			show_timer = true,
 			source = "skill",
 			text_id = "menu_bloodthirst",
 			icon_data = {
@@ -2612,10 +2615,13 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				skill_id = "bloodthirst",
 				tree = 5
 			},
-			display_format = ""
+			modify_value_func = function(n)
+				return n * 100
+			end,
+			display_format = "%i%%"
 		},
 		counterstrike = { --counterstrike (counter melee/cloaker kick)
-			disabled = true, --not implemented; requires upd_func to check playerstandard meleeing state
+			disabled = false, --not implemented; requires upd_func to check playerstandard meleeing state
 			source = "skill",
 			text_id = "menu_drop_soap_beta",
 			icon_data = {
@@ -2626,7 +2632,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		berserker_basic = { --berserker (melee damage bonus inverse to health ratio)
-			disabled = true, --not implemented; requires upd_func
+			disabled = false, --not implemented; requires upd_func
 			source = "skill",
 			text_id = "menu_wolverine_beta",
 			icon_data = {
@@ -2637,7 +2643,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		berserker_aced = { --berserker (ranged damage bonus inverse to health ratio)
-			disabled = true, --not implemented; requires upd_func
+			disabled = false, --not implemented; requires upd_func
 			source = "skill",
 			text_id = "menu_wolverine_beta",
 			icon_data = {
@@ -2651,7 +2657,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 
 	--crew chief
 		marathon_man = { --marathon man (damage reduction in medium range of enemies)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck1_1",
 			icon_data = {
@@ -2662,7 +2668,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		hostage_situation = { --hostage situation (damage resistance per hostage)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck1_5",
 			icon_data = {
@@ -2674,7 +2680,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--muscle
 		meat_shield = { --meat shield (increased threat when close to allies)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck2_3",
 			icon_data = {
@@ -2686,6 +2692,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--armorer
 		reinforced_armor = { --reinforced armor (temporary invuln on armor break)
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck3_7",
 			icon_data = {
@@ -2708,7 +2715,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--rogue
 		elusive = { --elusive (decreased threat when close to allies)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck4_3",
 			icon_data = {
@@ -2720,7 +2727,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--hitman
 		tooth_and_claw = { --tooth and claw (guaranteed armor regen timer after break)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck5_9",
 			icon_data = {
@@ -2732,7 +2739,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--burglar
 		bag_of_tricks = { --bag of tricks/luck of the irish/dutch courage (reduced target chance from crouching still)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck7_3",
 			icon_data = {
@@ -2743,7 +2750,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		breath_of_fresh_air = { --breath of fresh air (increased armor recovery rate when standing still)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck7_9",
 			icon_data = {
@@ -2755,7 +2762,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--infiltrator
 		overdog = { --overdog (damage resist when surrounded, stacking melee hit damage) (shared with sociopath)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck8_1",
 			icon_data = {
@@ -2766,7 +2773,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		basic_close_combat = { --basic close combat
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck8_3",
 			icon_data = {
@@ -2777,7 +2784,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		life_leech = { --life leech (melee hit restores health cooldown)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck8_9",
 			icon_data = {
@@ -2789,7 +2796,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--sociopath
 		tension = { --tension (armor gate on kill cooldown)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck9_3",
 			icon_data = {
@@ -2801,7 +2808,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		clean_hit = { --clean hit (health on melee kill cooldown)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck9_5",
 			icon_data = {
@@ -2812,7 +2819,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		overdose = { --overdose (armor gate on medium range kill cooldown)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck9_7",
 			icon_data = {
@@ -2824,7 +2831,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--gambler
 		ammo_box_pickup_health = { --medical supplies (health on ammo box pickup)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			show_timer = true,
 			source = "perk",
 			text_id = "menu_deck10_1",
@@ -2836,7 +2843,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		ammo_box_pickup_share = { --ammo give out (ammo box team share)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			show_timer = true,
 			source = "perk",
 			text_id = "menu_deck10_3",
@@ -2849,7 +2856,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--grinder
 		histamine = { --histamine (health on damage stacks)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck11_1",
 			icon_data = {
@@ -2861,7 +2868,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--yakuza
 		koi_irezumi = { --koi irezumi (armor recovery rate inverse to health)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck12_1",
 			icon_data = {
@@ -2872,7 +2879,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		hebi_irezumi = { --hebi irezumi (move speed inverse to health)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck12_3",
 			icon_data = {
@@ -2884,7 +2891,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--ex-president
 		point_break = { --point break (stored health per kill)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck13_1",
 			icon_data = {
@@ -2896,7 +2903,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--maniac
 		excitement = { --excitement (hysteria stacks)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck14_1",
 			icon_data = {
@@ -2908,7 +2915,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--anarchist
 		blitzkrieg_bop = { --blitzkrieg bop (armor regen timer)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck15_1",
 			icon_data = {
@@ -2919,7 +2926,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		lust_for_life = { --lust for life (armor on damage cooldown)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck15_7",
 			icon_data = {
@@ -2931,7 +2938,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--biker
 		prospect = { --prospect (health/armor on any crew kill)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck16_1",
 			upd_func = function(t,dt,values,display_setting,buff_data)
@@ -2949,7 +2956,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--kingpin
 		kingpin_injector = { --injector throwable duration/cooldown?
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck17_1",
 			icon_data = {
@@ -2961,7 +2968,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--sicario
 		sicario_smoke_bomb = { --smoke bomb (cooldown, in-screen effect)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck18_1",
 			icon_data = {
@@ -2972,7 +2979,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		twitch = { --twitch (shot dodge cooldown)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck18_3",
 			icon_data = {
@@ -2984,7 +2991,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--stoic
 		virtue = { --virtue (hip flask) + cooldown
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck19_1",
 			icon_data = {
@@ -2995,7 +3002,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		delayed_damage = { --general delayed damage
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_kitr_buff_delayed_damage_title",
 			icon_data = {
@@ -3006,7 +3013,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		calm = { --calm (4s free delayed damage negation)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck19_5",
 			icon_data = {
@@ -3018,7 +3025,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--tag team
 		gas_dispenser = { --gas dispenser tagged
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck20_1",
 			icon_data = {
@@ -3030,7 +3037,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		},
 	--hacker
 		pocket_ecm = { --pocket ecm throwable
-			disabled = true, --not implemented; requires tagteam playeraction
+			disabled = false, --not implemented; requires tagteam playeraction
 			source = "perk",
 			text_id = "menu_deck21_1",
 			icon_data = {
@@ -3041,7 +3048,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			display_format = ""
 		},
 		kluge = { --kluge (dodge on kill while feedback active)
-			disabled = true, --not implemented
+			disabled = false, --not implemented
 			source = "perk",
 			text_id = "menu_deck21_7",
 			icon_data = {
