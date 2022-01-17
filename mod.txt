@@ -40,39 +40,39 @@
 
 		{
 			"hook_id" : "lib/managers/playermanager",
-			"script_path" : "buff/playermanager.lua"
+			"script_path" : "hooks/buffs/playermanager.lua"
 		},
 		{
 			"DISABLEDhook_id" : "lib/units/beings/player/states/playertased",
-			"script_path" : "buff/playertased.lua"
+			"script_path" : "hooks/buffs/playertased.lua"
 		},
 		{
 			"DISABLEDhook_id" : "lib/units/beings/player/playermovement",
-			"script_path" : "buff/playermovement.lua"
+			"script_path" : "hooks/buffs/playermovement.lua"
 		},
 		{
 			"DISABLEDhook_id" : "lib/units/beings/player/playerdamage",
-			"script_path" : "buff/playerdamage.lua"
+			"script_path" : "hooks/buffs/playerdamage.lua"
 		},
 		{
 			"DISABLEDhook_id" : "lib/units/beings/player/playerinventory",
-			"script_path" : "buff/playerinventory.lua"
+			"script_path" : "hooks/buffs/playerinventory.lua"
 		},
 		{
 			"DISABLEDhook_id" : "lib/managers/hud/hudteammate",
-			"script_path" : "buff/hudteammate.lua"
+			"script_path" : "hooks/buffs/hudteammate.lua"
 		},
 		{
 			"DISABLEDhook_id" : "core/lib/managers/coreenvironmentcontrollermanager",
-			"script_path" : "buff/coreenvironmentcontrollermanager.lua"
+			"script_path" : "hooks/buffs/coreenvironmentcontrollermanager.lua"
 		},
 		{
 			"DISABLEDhook_id" : "lib/units/beings/player/states/playerstandard",
-			"script_path": "buff/playerstandard.lua"
+			"script_path": "hooks/buffs/playerstandard.lua"
 		},
 		{
 			"DISABLEDhook_id" : "lib/managers/hud/hudassaultcorner",
-			"script_path" : "buff/hudassaultcorner.lua"
+			"script_path" : "hooks/buffs/hudassaultcorner.lua"
 		}
 	]
 }
