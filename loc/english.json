@@ -1,34 +1,60 @@
 {
 	
-	"menu_kitr_buff_fixed_health_regen_title" : "Fixed Health Regen",
-	"menu_kitr_buff_health_regen_title" : "Health Regen",
-	"menu_kitr_buff_crit_chance_title" : "Crit Chance",
 	"menu_kitr_buff_dodge_chance_title" : "Dodge Chance",
+	"menu_kitr_buff_dodge_chance_desc" : "Percent chance to dodge incoming damage",
+	
+	"menu_kitr_buff_crit_chance_title" : "Crit Chance",
+	"menu_kitr_buff_crit_chance_desc" : "Percent chance to score critical hits",
+	
+	"menu_kitr_buff_fixed_health_regen_title" : "Fixed Health Regen",
+	"menu_kitr_buff_fixed_health_regen_desc" : "Flat health points regenerated",
+	"menu_kitr_buff_health_regen_title" : "Health Regen",
+	"menu_kitr_buff_health_regen_desc" : "Percent rate of health regenerated",
+	
 	"menu_kitr_buff_damage_resistance_title" : "Damage Resistance",
+	"menu_kitr_buff_damage_resistance_desc" : "Percent amount of damage resistance",
+	
 	"menu_kitr_buff_damage_absorption_title" : "Damage Absorption",
-	"menu_kitr_buff_weapon_damage_multiplier" : "Weapon Damage",
-	"menu_kitr_buff_weapon_reload_speed_multiplier" : "Weapon Reload Speed",
-	"menu_kitr_buff_weapon_accuracy_multiplier" : "Weapon Accuracy",
-	"menu_kitr_buff_melee_damage_multiplier" : "Melee Damage",
+	"menu_kitr_buff_damage_absorption_desc" : "Direct damage absorption amount",
+	
+	"menu_kitr_buff_weapon_damage_multiplier_title" : "Weapon Damage",
+	"menu_kitr_buff_weapon_damage_multiplier_desc" : "Percent weapon damage multiplier",
+	
+	"menu_kitr_buff_weapon_reload_speed_multiplier_title" : "Weapon Reload Speed",
+	"menu_kitr_buff_weapon_reload_speed_multiplier_desc" : "Percent reload speed multiplier",
+	
+	"menu_kitr_buff_weapon_accuracy_multiplier_desc" : "Weapon Accuracy",
+	"menu_kitr_buff_weapon_damage_multiplier_desc" : "Percent weapon accuracy multiplier",
+	
+	"menu_kitr_buff_melee_damage_multiplier_title" : "Melee Damage",
+	"menu_kitr_buff_melee_damage_multiplier_desc" : "Percent melee damage multiplier",
+	
+	"menu_kitr_buff_delayed_damage_title" : "Delayed Damage",
+	"menu_kitr_buff_delayed_damage_desc" : "Delayed damage amount and timer",
+
 	"menu_kitr_buff_generic_cooldown_suffix" : "Cooldown",
+	"menu_kitr_buff_generic_aced_suffix" : "Aced",
+	"menu_kitr_buff_generic_basic_suffix" : "Basic",
+	
+	"menu_kitr_buff_flashbanged_title" : "Blinded",
+	"menu_kitr_buff_flashbanged_desc" : "Enemy flashbangs blindness timer",
+	"menu_kitr_buff_winters_present_title" : "Capt. Winters",
+	"menu_kitr_buff_winters_present_desc" : "Enemy damage resistance amount",
+	"menu_kitr_buff_inspire_aced_cooldown_desc" : "Cooldown timer for long distance revives",
+	"menu_kitr_buff_combat_medic_desc" : "Damage resistance during/after reviving",
 	
 	"menu_kitr_main_menu_title" : "KineticTrackers",
 	"menu_kitr_main_menu_desc" : "Edit KineticTrackers Options",
-	"menu_kitr_buffs_title" : "Buffs...",
+	"menu_kitr_buffs_title" : "Buffs Customization...",
 	"menu_kitr_buffs_desc" : "Edit Buff Tracker Options",
 	"menu_kitr_buff_category_general_title" : "General...",
 	"menu_kitr_buff_category_general_desc" : "Edit General Options",
 	"menu_kitr_buff_category_skill_title" : "Skill Buff Trackers...",
 	"menu_kitr_buff_category_skill_desc" : "Edit Skill Options",
-	"menu_kitr_buff_category_skilltree_mastermind_title" : "Mastermind",
 	"menu_kitr_buff_category_skilltree_mastermind_desc" : "Mastermind Skills",
-	"menu_kitr_buff_category_skilltree_enforcer_title" : "Enforcer",
 	"menu_kitr_buff_category_skilltree_enforcer_desc" : "Enforcer Skills",
-	"menu_kitr_buff_category_skilltree_technician_title" : "Technician",
 	"menu_kitr_buff_category_skilltree_technician_desc" : "Technician Skills",
-	"menu_kitr_buff_category_skilltree_ghost_title" : "Ghost",
 	"menu_kitr_buff_category_skilltree_ghost_desc" : "Ghost Skills",
-	"menu_kitr_buff_category_skilltree_fugitive_title" : "Fugitive",
 	"menu_kitr_buff_category_skilltree_fugitive_desc" : "Fugitive Skills",
 	"menu_kitr_buff_category_perk_title" : "Perk Deck Buff Trackers...",
 	"menu_kitr_buff_category_perk_desc" : "Edit Perk Deck Options",

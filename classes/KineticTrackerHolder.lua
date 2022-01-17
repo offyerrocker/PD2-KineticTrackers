@@ -123,7 +123,7 @@ function KineticTrackerHolder:AddBuff(id,params)
 	local show_timer = buff_tweakdata.show_timer
 	local primary_label_string = ""
 	local secondary_label_string = ""
-	local buff_label_string = managers.localization:text(buff_tweakdata.text_id)
+	local buff_label_string = managers.localization:text(buff_tweakdata.name_id or buff_tweakdata.text_id)
 	local primary_label_format = buff_tweakdata.display_format or ""
 	local end_t = params.end_t
 	local duration = params.duration
