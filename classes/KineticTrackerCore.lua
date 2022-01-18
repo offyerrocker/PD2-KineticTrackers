@@ -1814,7 +1814,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				swap_weapon_faster = "running_from_death_basic_swap_speed",
 				reload_weapon_faster = "running_from_death_basic_reload_speed",
 				berserker_damage_multiplier = "swan_song",
-				team_damage_speed_multiplier_received = "second_wind_team", --second wind aced (from team)
+				team_damage_speed_multiplier_received = "second_wind_aced", --second wind aced (from team)
 				unseen_strike = "unseen_strike"
 			}
 		},
@@ -2200,7 +2200,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			show_timer = true,
 			source = "skill",
 			text_id = "menu_combat_medic_beta",
---			desc_id = "menu_kitr_buff_combat_medic_desc",
+			desc_id = "menu_kitr_buff_combat_medic_desc",
 			icon_data = {
 				source = "skill",
 				skill_id = "combat_medic",
