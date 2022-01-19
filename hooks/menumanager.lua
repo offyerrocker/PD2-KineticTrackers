@@ -17,7 +17,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 	local basic_text = loc:text("menu_kitr_buff_generic_basic_suffix")
 	local aced_text = loc:text("menu_kitr_buff_generic_aced_suffix")
 	local cooldown_text = loc:text("menu_kitr_buff_generic_cooldown_suffix")
-	for buff_id,buff_data in pairs(KineticTrackerCore.tweak_data) do 
+	for buff_id,buff_data in pairs(KineticTrackerCore.tweak_data.buffs) do 
 		if not buff_data.name_id then 
 			local text_id = buff_data.text_id
 			local title = loc:text(text_id)
@@ -45,7 +45,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 	
 	--generate submenus for each buff here
 	--including data for later, further menu generation, such as localization and callbacks
-	for buff_name,buff_data in pairs(KineticTrackerCore.tweak_data) do 
+	for buff_name,buff_data in pairs(KineticTrackerCore.tweak_data.buffs) do 
 		if not buff_data.disabled then 
 			--check for valid settings for this buff
 			local buff_display_setting = KineticTrackerCore.settings.buffs[buff_name] 
@@ -121,7 +121,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_KineticTrackers", function(menu_manager, nodes)
-	for buff_name,buff_data in pairs(KineticTrackerCore.tweak_data) do 
+	for buff_name,buff_data in pairs(KineticTrackerCore.tweak_data.buffs) do 
 		local shortname = KineticTrackerCore.menu_data.buffs_lookup[buff_name]
 		local menu_data = KineticTrackerCore.menu_data.menus[shortname]
 		if menu_data then 

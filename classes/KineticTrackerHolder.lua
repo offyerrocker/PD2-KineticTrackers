@@ -97,7 +97,7 @@ function KineticTrackerHolder:AddBuff(id,params)
 	
 	local sort_by_priority = false
 	
-	local buff_tweakdata = id and self.tweak_data[id]
+	local buff_tweakdata = id and self.tweak_data.buffs[id]
 	local buff_display_setting = self._core:GetBuffDisplaySettings(id)
 	if buff_tweakdata.disabled then 
 		--don't keep track of hard-disabled buffs;
