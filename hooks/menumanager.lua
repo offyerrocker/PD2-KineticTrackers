@@ -121,6 +121,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 end)
 
 Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_KineticTrackers", function(menu_manager, nodes)
+	--add items to menus here
 	for buff_name,buff_data in pairs(KineticTrackerCore.tweak_data.buffs) do 
 		local shortname = KineticTrackerCore.menu_data.buffs_lookup[buff_name]
 		local menu_data = KineticTrackerCore.menu_data.menus[shortname]
@@ -457,7 +458,156 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 		end
 		--]]
 	end
-	--add items to menus here
+
+
+
+
+
+--[[
+
+	MenuCallbackHandler.callback_kitr_set_hud_vdir = function(self,item)
+		local item_value = tonumber(item:value())
+		KineticTrackerCore.settings.vdir = item_value
+		if Application:paused() and KineticTrackerCore._holder then 
+			KineticTrackerCore._holder:Update(Application:time(),0)
+		end
+		KineticTrackerCore:SaveSettings()
+	end
+	
+	MenuHelper:AddMultipleChoice({
+		id = "menu_kitr_appearance_set_vdir",
+		title = "menu_kitr_appearance_set_vdir_title",
+		desc = "menu_kitr_appearance_set_vdir_desc",
+		callback = "callback_kitr_set_hud_vdir",
+		items = {
+			"menu_kitr_top",
+			"menu_kitr_bottom"
+		},
+		value = KineticTrackerCore.settings.vdir,
+		menu_id = "menu_kitr_appearance"
+	})
+	
+	MenuCallbackHandler.callback_kitr_set_hud_hdir = function(self,item)
+		local item_value = tonumber(item:value())
+		KineticTrackerCore.settings.hdir = item_value
+		if Application:paused() and KineticTrackerCore._holder then 
+			KineticTrackerCore._holder:Update(Application:time(),0)
+		end
+		KineticTrackerCore:SaveSettings()
+	end
+	
+	
+	MenuHelper:AddMultipleChoice({
+		id = "menu_kitr_appearance_set_hdir",
+		title = "menu_kitr_appearance_set_hdir_title",
+		desc = "menu_kitr_appearance_set_hdir_desc",
+		callback = "callback_kitr_set_hud_hdir",
+		items = {
+			"menu_kitr_left",
+			"menu_kitr_right"
+		},
+		value = KineticTrackerCore.settings.hdir,
+		menu_id = "menu_kitr_appearance"
+	})
+	
+	
+	MenuCallbackHandler.callback_set_hud_valign = function(self,item)
+		local item_value = tonumber(item:value())
+		KineticTrackerCore.settings.valign = item_value
+		if Application:paused() and KineticTrackerCore._holder then 
+			KineticTrackerCore._holder:Update(Application:time(),0)
+		end
+		KineticTrackerCore:SaveSettings()
+	end
+	
+	MenuHelper:AddMultipleChoice({
+		id = "menu_kitr_appearance_set_valign",
+		title = "menu_kitr_appearance_set_valign_title",
+		desc = "menu_kitr_appearance_set_valign_desc",
+		callback = "callback_set_hud_valign",
+		items = {
+			"menu_kitr_top",
+			"menu_kitr_bottom",
+			"menu_kitr_center"
+		},
+		value = KineticTrackerCore.settings.valign,
+		menu_id = "menu_kitr_appearance"
+	})
+	
+	MenuCallbackHandler.callback_set_hud_halign = function(self,item)
+		local item_value = tonumber(item:value())
+		KineticTrackerCore.settings.halign = item_value
+		if Application:paused() and KineticTrackerCore._holder then 
+			KineticTrackerCore._holder:Update(Application:time(),0)
+		end
+		KineticTrackerCore:SaveSettings()
+	end
+	
+	MenuHelper:AddMultipleChoice({
+		id = "menu_kitr_appearance_set_halign",
+		title = "menu_kitr_appearance_set_halign_title",
+		desc = "menu_kitr_appearance_set_halign_desc",
+		callback = "callback_set_hud_halign",
+		items = {
+			"menu_kitr_left",
+			"menu_kitr_right",
+			"menu_kitr_center"
+		},
+		value = KineticTrackerCore.settings.halign,
+		menu_id = "menu_kitr_appearance"
+	})
+	
+	--]]
+	
+
+	MenuCallbackHandler.callback_kitr_set_hud_x = function(self,item)
+		local item_value = tonumber(item:value())
+		KineticTrackerCore.settings.x = item_value
+		if Application:paused() and KineticTrackerCore._holder then 
+			KineticTrackerCore._holder:Update(Application:time(),0)
+		end
+		--apply visually
+		
+		KineticTrackerCore:SaveSettings()
+	end
+	
+	MenuHelper:AddSlider({
+		id = "menu_kitr_appearance_set_x",
+		title = "menu_kitr_appearance_set_x_title",
+		desc = "menu_kitr_appearance_set_x_desc",
+		callback = "callback_kitr_set_hud_x",
+		value = KineticTrackerCore.settings.x,
+		min = 0,
+		max = 1280,
+		step = 1,
+		show_value = true,
+		menu_id = "menu_kitr_appearance"
+	})
+	
+
+	MenuCallbackHandler.callback_kitr_set_hud_y = function(self,item)
+		local item_value = tonumber(item:value())
+		KineticTrackerCore.settings.y = item_value
+		if Application:paused() and KineticTrackerCore._holder then 
+			KineticTrackerCore._holder:Update(Application:time(),0)
+		end
+		--apply visually
+		
+		KineticTrackerCore:SaveSettings()
+	end
+	
+	MenuHelper:AddSlider({
+		id = "menu_kitr_appearance_set_y",
+		title = "menu_kitr_appearance_set_y_title",
+		desc = "menu_kitr_appearance_set_y_desc",
+		callback = "callback_kitr_set_hud_y",
+		value = KineticTrackerCore.settings.y,
+		min = 0,
+		max = 720,
+		step = 1,
+		show_value = true,
+		menu_id = "menu_kitr_appearance"
+	})
 end)
 
 Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenus_KineticTrackers", function(menu_manager, nodes)
@@ -470,7 +620,7 @@ Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenus_KineticTra
 				menu_name,
 				{
 					area_bg = data.area_bg,
-					back_callback = data.back_callback_name and MenuCallbackHandler[data.back_callback_name],
+					back_callback = data.back_callback_name and MenuCallbackHandler[data.back_callback_name] or data.back_callback,
 					focus_changed_callback = data.focus_changed_callback_name
 				}
 			)
@@ -487,6 +637,7 @@ Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenus_KineticTra
 	
 
 	create_menu(nil,KineticTrackerCore.menu_data.menus.main)
+	create_menu(nil,KineticTrackerCore.menu_data.menus.appearance)
 	create_menu(nil,KineticTrackerCore.menu_data.menus.buffs)
 	create_menu(nil,KineticTrackerCore.menu_data.menus.general)
 	create_menu(nil,KineticTrackerCore.menu_data.menus.perk)

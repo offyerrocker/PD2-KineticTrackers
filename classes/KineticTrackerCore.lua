@@ -22,7 +22,8 @@
 		buff_display_setting is an extraneous table generated from per-buff display settings overlaid onto settings
 		this allows "unchanged" values where a player can choose to have global settings (like ACH) which can be overrided on a per-buff basis
 		
-		
+	keybind to enter edit mode, a la hunterpie
+		* click+drag/resize buffs window 
 		
 	
 	add item style option (link Holder's update and Item:new() call to global style setting)
@@ -47,7 +48,6 @@
 		
 		
 	thinking about making options per-	specifically now.
-	straighten out buff-enabled setting vs buff data enabled value
 	
 	
 	
@@ -198,10 +198,82 @@
 	
 	
 	buffs to be added:
-		-todo (recursive; this todo is todo)
-	
-	
-	
+		flashbang
+		winters
+		inspire basic cooldown
+		inspire basic
+		forced friendship (damage absorption from civs)
+		partners in crime
+		forced friendship
+		ammo efficiency
+		die hard
+		bullseye
+		scavenger
+		fully loaded
+		chameleon (omniscience)
+		unseen_strike
+		swan song
+		messiah ready/messiah charges
+		bloodthirst basic
+		bloodthirst aced
+		berserker basic/aced
+		
+		marathon man (damage reduction in medium range of enemies)
+		hostage situation (damage resistance per hostage)
+		meat shield (increased threat when close to allies)
+		reinforced armor (temporary invuln on armor break + cooldown)
+		elusive (decreased threat when close to allies)
+		tooth and claw (guaranteed armor regen timer after break)
+		bag of tricks/luck of the irish/dutch courage (reduced target chance from crouching still)
+		breath of fresh air (increased armor recovery rate when standing still
+		overdog (damage resist when surrounded, stacking melee hit damage) (shared with sociopath)
+		basic close combat
+		life leech (melee hit restores health cooldown)
+		tension (armor gate on kill cooldown)
+		clean hit (health on melee kill cooldown)
+		overdose (armor gate on medium range kill cooldown)
+		medical supplies (health on ammo box pickup)
+		ammo give out (ammo box team share)
+		histamine (health on damage stacks)
+		koi irezumi (armor recovery rate inverse to health)
+		hebi irezumi (move speed inverse to health)
+		point break (stored health per kill)
+		excitement (hysteria stacks)
+		blitzkrieg bop (armor regen timer)
+		lust for life (armor on damage cooldown)
+		prospect (health/armor on any crew kill)
+		injector throwable duration/cooldown?
+		smoke bomb (cooldown, in-screen effect)
+		twitch (shot dodge cooldown)
+		virtue (hip flask) + cooldown
+		general delayed damage
+		calm (4s countdown free delayed damage negation)
+		gas dispenser tagged
+		pocket ecm throwable
+		kluge (dodge on kill while feedback active)
+		leech throwable, temp invuln on healthgate
+		leech throwable, temp invuln on healthgate
+		
+		
+		
+	i probably don't want to implement:
+		stockholm syndrome aced- hostage autotrade ready
+			* only relevant when the player is dead; mod is designed to work when you are not dead
+		stable shot
+			* obvious proc conditions; minor impact to gameplay
+		rifleman
+			* obvious proc conditions; minor impact to gameplay
+		far away
+			* obvious proc conditions; minor impact to gameplay
+		fire control
+			* obvious proc conditions; minor impact to gameplay
+		counterstrike
+			* obvious proc conditions
+	misc tracker features:
+		drill timers
+		camera loop timer (second chances)
+		equipment timers (ecms)
+		sentry trackers
 	
 	
 	
@@ -224,7 +296,7 @@ KineticTrackerCore = _G.KineticTrackerCore or {}
 
 
 KineticTrackerCore._path = ModPath
-KineticTrackerCore._options_path = ModPath .. "menu/options.json"
+KineticTrackerCore._options_path = ModPath .. "menu/menu_main.json"
 KineticTrackerCore._default_localization_path = ModPath .. "loc/english.json"
 KineticTrackerCore._save_path = SavePath .. "KineticTrackers.json"
 
@@ -261,16 +333,30 @@ KineticTrackerCore.default_palettes = {
 }
 KineticTrackerCore.default_settings = {
 	logs_enabled = true,
-	toggle_setting = false,
-	slider_setting = 0,
+	x = 0,
+	y = 0,
+	w = 1280,
+	h = 720,
+	halign = 1, --1: left, 2: right, 3: center
+	valign = 1, --1: top, 2: right, 3: center
+	hdir = 1, --1: left to right, 2: right to left
+	vdir = 1, --1: top to bottom, 2: bottom to top
+	
+	timer_enabled = true,
+	timer_minutes_display = 1,--1 = minutes, 2 = seconds
+	timer_precision = 2,
+	timer_flashing_mode = 1,
+	timer_flashing_threshold = 3,
+	timer_flashing_speed = 1,
+	color = "ffffff",
+	
 	palettes = table.deep_map_copy(KineticTrackerCore.default_palettes),
-	multiplechoice_setting = 1,
 	buffs = {
 		TEMPLATE = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,--1 = minutes, 2 = seconds
+			timer_minutes_display = 1,
 			timer_precision = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
@@ -1131,6 +1217,18 @@ KineticTrackerCore.menu_data = {
 			menu_position = nil,
 			subposition = nil
 		},
+		appearance = {
+			skip_add_menu_item = false,
+			id = "menu_kitr_appearance",
+			title = "menu_kitr_appearance_menu_title",
+			desc = "menu_kitr_appearance_menu_desc",
+			parent = "menu_kitr_main",
+			area_bg = "none",
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = nil,
+			subposition = nil
+		},
 		buffs = {
 			id = "menu_kitr_buffs",
 			title = "menu_kitr_buffs_title",
@@ -1732,6 +1830,33 @@ function KineticTrackerCore:GetBuffDisplaySettings(id)
 	return self.settings.buffs[id] or buff_options[id] or default
 end
 
+function KineticTrackerCore:GetHUDPosition()
+	return self.settings.x,self.settings.y
+end
+
+function KineticTrackerCore:GetHUDVAlign()
+	return self.settings.valign
+end
+
+function KineticTrackerCore:GetHUDHAlign()
+	return self.settings.halign
+end
+
+function KineticTrackerCore:GetHUDVDirection()
+	return self.settings.vdir
+end
+
+function KineticTrackerCore:GetHUDHDirection()
+	return self.settings.hdir
+end
+
+function KineticTrackerCore:GetHUDWidth()
+	return self.settings.w
+end
+
+function KineticTrackerCore:GetHUDHeight()
+	return self.settings.h
+end
 
 -------------------------------------------------------------
 --*********************    Core functionality    *********************--
@@ -2351,7 +2476,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				display_format = "+%0.2f%%"
 			},
 			stockholm_syndrome = { --stockholm syndrome aced (hostages autotrade for your return)
-				disabled = false, --not implemented
+				disabled = true, --not implemented
 				source = "skill",
 				text_id = "menu_stockholm_syndrome_beta",
 				icon_data = {

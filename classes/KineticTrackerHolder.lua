@@ -168,7 +168,7 @@ function KineticTrackerHolder:AddBuff(id,params)
 		end
 	end
 	
-	local item_style_index = 2
+	local item_style_index = 1
 	local new_item = KineticTrackerItem:new({
 		id = id,
 		parent_panel = self._panel,
@@ -232,13 +232,40 @@ end
 
 function KineticTrackerHolder:Update(t,dt)
 	if alive(managers.player:local_player()) then 
-		local start_x = 256
-		local start_y = 650
+		local kcore = self._core
+		local start_x,start_y = kcore:GetHUDPosition()
 		local style_data = KineticTrackerItem.STYLES[2]
 		local buff_w = style_data.panel_width
 		local buff_h = style_data.panel_height
 		
-		local _i = #self._buffs
+		local halign = kcore:GetHUDHAlign()
+		local valign = kcore:GetHUDVAlign()
+		local vdir = kcore:GetHUDVDirection()
+		local hdir = kcore:GetHUDHDirection()
+		
+		local di,_i
+		if true then
+			_i = #self._buffs
+			di = -1
+		else
+			_i = 1
+			di = 1
+		end
+		
+		local w,h
+		if hdir == 2 then 
+			w = -buff_w
+		else
+			w = buff_w
+		end
+		if vdir == 2 then 
+			h = -buff_h
+		else
+			h = buff_h
+		end
+		
+		local align = "vertical"
+		
 		for i=#self._buffs,1,-1 do 
 			local buff_data = self._buffs[i]
 			local end_t = buff_data.end_t
@@ -251,7 +278,7 @@ function KineticTrackerHolder:Update(t,dt)
 				local id = buff_data.id
 				local item = buff_data.item
 				local panel = item._panel
-				local buff_display_setting = self._core:GetBuffDisplaySettings(id)
+				local buff_display_setting = kcore:GetBuffDisplaySettings(id)
 
 				local hidden = false
 				local below_threshold
@@ -320,17 +347,14 @@ function KineticTrackerHolder:Update(t,dt)
 				if not hidden then
 				
 					--todo animate
-					local align = "vertical"
 					if align == "horizontal" then 
-						local w = buff_w
 						panel:set_x(start_x + (w * _i))
 						panel:set_y(start_y)
 					else
-						local h = -buff_h
 						panel:set_x(start_x)
 						panel:set_y(start_y + (h * _i))
 					end
-					_i = _i - 1
+					_i = _i + di
 				end
 				item:SetVisible(not hidden)
 			end
