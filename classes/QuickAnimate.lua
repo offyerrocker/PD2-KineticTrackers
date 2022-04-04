@@ -14,7 +14,7 @@ My rebuttal is as follows:
 Please contact me if you need help with using or understanding QuickAnimate.
 	written by Offyerrocker
 --]]
-local THIS_VERSION = 4
+local THIS_VERSION = 5
 
 if QuickAnimate and QuickAnimate.VERSION and (QuickAnimate.VERSION >= THIS_VERSION) then 
 	log(ModPath .. ": QuickAnimate version " .. tostring(QuickAnimate.VERSION) .. " already exists")
@@ -25,6 +25,7 @@ QuickAnimate = QuickAnimate or class()
 --v2 experimental: added parent class to default getting animate functions from
 --v3: allowed passing third "paused" argument when using BeardLib updater type, added is_animating func
 --v4: allowed enabling debug mode in params 
+--v5: animate_wait now returns the wait id, so that pending wait functions can be stopped via animate_stop.
 ---
 QuickAnimate.updater_types = {
 	HUDManager = 1,
@@ -126,6 +127,7 @@ end
 function QuickAnimate:animate_wait(timer,callback,...)
 	self._animate_waits = self._animate_waits + 1
 	self:animate(self._animate_waits,self._animate_wait,callback,timer,...)
+	return self._animate_waits
 end
 
 function QuickAnimate._animate_wait(o,t,dt,start_t,duration)

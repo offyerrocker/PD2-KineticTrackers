@@ -186,6 +186,7 @@ function KineticTrackerItem:init(params)
 		name = "debug",
 		layer = -100,
 		alpha = 0.2,
+		visible = true,
 		color = Color(math.random(),math.random(),1)
 	})
 	

@@ -234,7 +234,7 @@ function KineticTrackerHolder:Update(t,dt)
 	if alive(managers.player:local_player()) then 
 		local kcore = self._core
 		local start_x,start_y = kcore:GetHUDPosition()
-		local style_data = KineticTrackerItem.STYLES[2]
+		local style_data = KineticTrackerItem.STYLES[1]
 		local buff_w = style_data.panel_width
 		local buff_h = style_data.panel_height
 		
