@@ -11,6 +11,18 @@ Hooks:Add("LocalizationManagerPostInit", "LocalizationManagerPostInit_KineticTra
 end)
 
 Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTrackers", function(menu_manager, nodes)
+	KineticTrackerCore:Setup()
+	
+	if _G.deathvox then
+		-- planned
+		KineticTrackerCore:InitBuffTweakData("crackdown")
+	elseif _G.restoration then
+		-- planned
+		KineticTrackerCore:InitBuffTweakData("resmod")
+	else
+		KineticTrackerCore:InitBuffTweakData()
+	end
+	
 	local loc = managers.localization
 	
 	local new_strings = {}
