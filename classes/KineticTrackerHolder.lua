@@ -57,7 +57,7 @@ function KineticTrackerHolder:CreatePanel(panel)
 	end
 end
 
-function KineticTrackerHolder:AddBuff(id,params,skip_sort)
+function KineticTrackerHolder:AddBuff(id,params,skip_sort,peer_id)
 	--Print("KineticTrackerHolder:AddBuff()",id,params.value)
 	
 	if not Utils:IsInHeist() then
@@ -76,7 +76,7 @@ function KineticTrackerHolder:AddBuff(id,params,skip_sort)
 		return
 	end
 	
-	local existing_buff = self:GetBuff(id)
+	local existing_buff = self:GetBuff(id,peer_id)
 	if existing_buff then 
 		self:_SetBuff(existing_buff,params)
 		return
@@ -105,12 +105,17 @@ function KineticTrackerHolder:AddBuff(id,params,skip_sort)
 		texture_data.texture,texture_data.texture_rect = icon_data.texture,icon_data.texture_rect
 	end
 	
+	local value_str = ""
+	if buff_tweakdata.get_display_string and params.value then
+		value_str = buff_tweakdata.get_display_string(buff_tweakdata,params.value)
+	end
+	
 	local gui_item
 	if alive(self._panel) then
 		gui_item = self._gui_class:new(id,{
-			buff_text = "qwerty",
-			primary_text = "asdf",
-			secondary_text = "123",
+			name_text = buff_tweakdata.text_id and managers.localization:text(buff_tweakdata.text_id) or "ERROR",
+			primary_text = value_str,
+			secondary_text = "", -- timer text
 			buff_data = buff_tweakdata,
 			texture_data = texture_data
 		},self._panel)
@@ -140,6 +145,7 @@ function KineticTrackerHolder:AddBuff(id,params,skip_sort)
 		value = params.value, -- O/nil, standard. whatever value represents the buff
 		end_t = params.end_t, -- float/nil, standard. remaining duration of the timer
 		total_t = params.total_t or (params.end_t and (params.end_t - Application:time())), -- float/nil, standard. default maximum of the timer
+		peer_id = peer_id,
 		user_data = params.user_data, -- table/nil, nonstandard
 		gui_item = gui_item
 	}
@@ -153,7 +159,6 @@ function KineticTrackerHolder:AddBuff(id,params,skip_sort)
 	end
 	
 end
-
 
 function KineticTrackerHolder.get_format_time_func(precision,precision_threshold) -- buff_id
 --	local td = self.tweak_data.buffs[buff_id]
@@ -326,13 +331,14 @@ function KineticTrackerHolder:SortBuffs()
 	local anim_sort_duration_short = 0.5
 	local panel_w,panel_h = self._panel:size()
 	local num_buffs = #self._buffs
+	local j = 1
 	for i,buff in ipairs(self._buffs) do 
 		local gui_item = buff.gui_item
 		if gui_item then
 			local panel = gui_item._panel
 			
 			local w,h = panel:size()
-			local x2,y2 = get_xy(i,num_buffs,w,h,panel_w,panel_h)
+			local x2,y2 = get_xy(j,num_buffs,w,h,panel_w,panel_h)
 			
 			local x1,y1 = panel:position()
 			local dx,dy = x2-x1,y2-y1
@@ -359,6 +365,8 @@ function KineticTrackerHolder:SortBuffs()
 					gui_item._animthread_sort = nil
 				end)
 			end
+			
+			j = j + 1
 		end
 	end
 end
@@ -370,6 +378,19 @@ function KineticTrackerHolder:_SetBuff(buff,params,skip_sort)
 		end
 	end
 	buff.user_data = params.user_data or buff.user_data
+	
+	local buff_tweakdata = self._tweak_data.buffs[buff.id]
+	
+	if buff.gui_item then
+		if buff_tweakdata.get_display_string and params.value then
+			local value_str = buff_tweakdata.get_display_string(buff_tweakdata,params.value) or ""
+			if value_str then
+				buff.gui_item:set_primary_text(value_str)
+			end
+		end
+		-- timer text (assuming it's a normal timer) will be handled in the update func
+		-- special timers (eg timers that count upwards or otherwise behave irregularly) should be handled on a casewise basis
+	end
 	
 	if not skip_sort then
 		self:SortBuffs()
@@ -386,19 +407,25 @@ function KineticTrackerHolder:SetBuff(id,params)
 	return self:_SetBuff(buff,params)
 end
 
-function KineticTrackerHolder:GetBuff(id)
+function KineticTrackerHolder:GetBuff(id,peer_id)
+	local check_peer_id = peer_id ~= nil
 	for i,buff_data in pairs(self._buffs) do 
-		if buff_data.id == id then 
+		if buff_data.id == id and (not check_peer_id or peer_id == buff_data.peer_id) then 
 			return buff_data,i
 		end
 	end
 end
 
-function KineticTrackerHolder:RemoveBuff(id)
+function KineticTrackerHolder:RemoveBuff(id,peer_id,skip_sort)
+	local check_peer_id = peer_id ~= nil
 	for i,buff_data in pairs(self._buffs) do 
-		if buff_data.id == id then 
-			self:_RemoveBuff(i)
-			return table.remove(self._buffs,i)
+		if buff_data.id == id and (not check_peer_id or peer_id == buff_data.peer_id) then 
+			self:_RemoveBuff(buff_data)
+			table.remove(self._buffs,i)
+			if not skip_sort then
+				self:SortBuffs()
+			end
+			return buff_data
 		end
 	end
 end
@@ -421,14 +448,14 @@ function KineticTrackerHolder:Update(t,dt)
 				self:_RemoveBuff(buff)
 			else
 				if buff.gui_item then
-					local time_rem = buff.end_t - t
+					local time_rem = math.max(buff.end_t - t,0)
 					
 					if buff.total_t then
 						-- feed visual progress
 						buff.gui_item:set_progress(time_rem / buff.total_t)
 					end
 					
-					buff.gui_item:set_name_text(self._format_timer_funcs[buff.id](time_rem))
+					buff.gui_item:set_secondary_text(self._format_timer_funcs[buff.id](time_rem))
 				end
 			end
 		end
@@ -437,6 +464,7 @@ end
 
 -- higher priority runs first
 function KineticTrackerHolder:AddUpdater(id,callback,priority)
+	if not id then return end
 	priority = priority or 1
 	table.insert(self._updaters,{id=id,callback=callback,priority=priority})
 	table.sort(self._updaters,function(a,b) 
@@ -444,6 +472,15 @@ function KineticTrackerHolder:AddUpdater(id,callback,priority)
 	end)
 end
 
+function KineticTrackerHolder:RemoveUpdater(id)
+	if not id then return end
+	
+	for i,updater in pairs(self._updaters) do 
+		if updater.id == id then
+			return table.remove(self._updaters,i)
+		end
+	end
+end
 
 
 
@@ -668,7 +705,7 @@ function KineticTrackerHolder:_RemoveBuff(id)
 	end
 end
 
-function KineticTrackerHolder:RemoveBuff(id)
+function KineticTrackerHolder:RemoveBuff(id,skip_sort)
 	local buff_data = self:_RemoveBuff(id)
 	if buff_data then 
 		local item = buff_data.item

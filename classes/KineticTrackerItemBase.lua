@@ -9,14 +9,14 @@ KineticTrackerItemBase.STYLE = {
 	icon_halign = "left",
 	icon_valign = "center",
 	icon_blend_mode = "normal",
-	buff_label_halign = "left",
-	buff_label_valign = "center",
-	buff_label_font = tweak_data.hud.medium_font,
-	buff_label_font_size = 16,
-	buff_label_blend_mode = "normal",
-	buff_label_alpha = 1,
-	buff_label_visible = true,
-	buff_label_align_to_icon = true,
+	name_label_halign = "left",
+	name_label_valign = "center",
+	name_label_font = tweak_data.hud.medium_font,
+	name_label_font_size = 16,
+	name_label_blend_mode = "normal",
+	name_label_alpha = 1,
+	name_label_visible = true,
+	name_label_align_to_icon = true,
 	primary_label_halign = "left",
 	primary_label_valign = "center",
 	primary_label_font = tweak_data.hud.medium_font,
@@ -36,7 +36,8 @@ KineticTrackerItemBase.STYLE = {
 	primary_bg_alpha = 0.66,
 	primary_bg_visible = false,
 	
-	margin_small = 2
+	margin_small = 2,
+	margin_medium = 4
 }
 
 
@@ -47,7 +48,9 @@ function KineticTrackerItemBase:init(id,params,parent_panel)
 	self:recreate_panel(id,params,parent_panel)
 end
 
+-- todo delete prev panel; nts id should be concatenation of id and secondary identifier (peer_id) if any
 function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
+	
 	local id = params.id
 	local texture_data = params.texture_data
 	local style = self.STYLE
@@ -55,7 +58,7 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 	local color_2 = Color.blue
 	local texture,texture_rect
 	
-	local buff_text = params.buff_text
+	local name_text = params.name_text
 	local primary_text = params.primary_text
 	local secondary_text = params.secondary_text
 	
@@ -97,15 +100,51 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 	})
 	self._icon = icon
 	
-	-- should be used for name label
+	-- should be used for buff name
 	local name_label = panel:text({
 		name = "name_label",
-		text = buff_text,
+		text = name_text,
+		font = style.name_label_font,
+		font_size = style.name_label_font_size,
+		x = icon_frame:right() + style.margin_small,
+		align = style.name_label_halign,
+		vertical = style.name_label_valign,
+		valign = "grow",
+		halign = "grow",
+		color = color_1,
+		blend_mode = style.name_label_blend_mode,
+		alpha = style.name_label_alpha,
+		layer = 2
+	})
+	self._name_label = name_label
+	
+	-- should be used for buff stacks/value (if any)
+	local primary_label = panel:text({
+		name = "primary_label",
+		text = primary_text,
+		font = style.primary_label_font,
+		font_size = style.primary_label_font_size,
+		x = 0,
+		align = style.primary_label_halign,
+		vertical = style.primary_label_valign,
+		valign = "grow",
+		halign = "grow",
+		color = color_2,
+		blend_mode = style.primary_label_blend_mode,
+		alpha = style.primary_label_alpha,
+		layer = 2
+	})
+	self._primary_label = primary_label
+	
+	-- should be used for buff timer (if any)
+	local secondary_label = panel:text({
+		name = "secondary_label",
+		text = secondary_text,
 		font = style.secondary_label_font,
 		font_size = style.secondary_label_font_size,
 		x = icon_frame:right() + style.margin_small,
-		align = "left",
-		vertical = "center",
+		align = style.secondary_label_halign,
+		vertical = style.secondary_label_valign,
 		valign = "grow",
 		halign = "grow",
 		color = color_2,
@@ -113,7 +152,7 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 		alpha = style.secondary_label_alpha,
 		layer = 2
 	})
-	self._name_label = name_label
+	self._secondary_label = secondary_label
 	
 	--local _x,_y,_w,_h = text_1:text_rect()
 	
@@ -132,6 +171,8 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 	})
 	--]]
 	
+	self:align_labels()
+	
 end
 
 
@@ -139,21 +180,46 @@ end
 function KineticTrackerItemBase:set_icon_color(color)
 	self._icon:set_color(color)
 end
-function KineticTrackerItemBase:set_name_text(s)
+function KineticTrackerItemBase:set_name_text(s,skip_align)
 	self._name_label:set_text(s)
+	if not skip_align then
+		self:align_labels()
+	end
 end
-function KineticTrackerItemBase:set_title_text(s)
-	--self._title_text:set_text(s)
+function KineticTrackerItemBase:set_primary_text(s,skip_align)
+	self._primary_label:set_text(s)
+	if not skip_align then
+		self:align_labels()
+	end
 end
-function KineticTrackerItemBase:set_subtitle_text(s)
-	--self._subtitle_text:set_text(s)
+function KineticTrackerItemBase:set_secondary_text(s,skip_align)
+	self._secondary_label:set_text(s)
+	if not skip_align then
+		self:align_labels()
+	end
 end
-function KineticTrackerItemBase:set_title_color(color)
-	--self._title_text:set_color(color)
+
+function KineticTrackerItemBase:align_labels()
+	local style = self.STYLE
+	if style.primary_label_align_to_name and string.len(self._name_label:text()) > 0 then
+		local x1,y1,w1,h1 = self._name_label:text_rect()
+		self._primary_label:set_x(self._name_label:x() + w1 + style.margin_medium)
+	end
+	
+	if style.secondary_label_align_to_primary and string.len(self._primary_label:text()) > 0 then
+		local x2,y2,w2,h2 = self._primary_label:text_rect()
+		self._secondary_label:set_x(self._primary_label:x() + w2 + style.margin_medium)
+	end
 end
-function KineticTrackerItemBase:set_subtitle_color(color)
-	--self._subtitle_text:set_color(color)
+
+function KineticTrackerItemBase:set_primary_text_color(color)
+	self._primary_label:set_color(color)
 end
+function KineticTrackerItemBase:set_secondary_text_color(color)
+	self._secondary_label:set_color(color)
+end
+
+-- todo anim flash func
 
 -- used for visual indication of timer progress
 function KineticTrackerItemBase:set_progress(n) -- float [0-1] progress of timer, in total
