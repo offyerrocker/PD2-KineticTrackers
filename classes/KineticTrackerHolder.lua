@@ -60,6 +60,10 @@ end
 function KineticTrackerHolder:AddBuff(id,params,skip_sort)
 	--Print("KineticTrackerHolder:AddBuff()",id,params.value)
 	
+	if not Utils:IsInHeist() then
+		return
+	end
+	
 	local settings = self._settings
 	local sort_by_priority = settings.sort_by_priority
 	
