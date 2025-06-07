@@ -58,6 +58,7 @@ function KineticTrackerHandler.get_temporary_property_time(pm,prop,default)
 	return default
 end
 
+
 -- Property events
 
 function KineticTrackerHandler:on_set_property(pm,name,value)
@@ -166,7 +167,6 @@ function KineticTrackerHandler:on_unaquire_cooldown_upgrade(pm,upgrade) -- upgra
 --	local buff_id = self:GetBuffIdFromCooldownUpgrade(upgrade.category,upgrade.upgrade)
 end
 
-
 function KineticTrackerHandler:on_disable_cooldown_upgrade(pm,category,upgrade)
 	local buff_id = self:GetBuffIdFromCooldownUpgrade(category,upgrade)
 	local expire_t = pm:get_disabled_cooldown_time(category,upgrade)
@@ -175,6 +175,109 @@ function KineticTrackerHandler:on_disable_cooldown_upgrade(pm,category,upgrade)
 		self._holder:AddBuff(buff_id,{value=value,end_t = expire_t,total_t = expire_t})
 	end
 end
+
+
+
+-- Pocket ECM Jammer events
+
+function KineticTrackerHandler:on_start_pocket_ecm_jammer(inv_ext,end_time)
+	local peer = managers.network:session():peer_by_unit(inv_ext._unit)
+	local peer_id = peer and peer:id() or 1
+	
+	--if not peer_id then
+	--	self:Print("ERROR: KineticTrackerHandler:on_start_pocket_jammer() Bad peer/peer_id for inventory extension",inv_ext)
+	--	return
+	--end
+	
+	end_time = end_time or inv_ext:get_jammer_time()
+	self._holder:AddBuff("pocket_ecm_jammer",
+		{
+			value = true, -- filler
+			end_t = TimerManager:game():time() + end_time,
+			total_t = end_time
+		},
+		false,
+		peer_id
+	)
+end
+
+function KineticTrackerHandler:on_stop_pocket_ecm_jammer(inv_ext)
+	local peer = managers.network:session():peer_by_unit(inv_ext._unit)
+	local peer_id = peer and peer:id() or 1
+	
+	--if not peer_id then
+	--	self:Print("ERROR: KineticTrackerHandler:on_stop_pocket_jammer() Bad peer/peer_id for inventory extension",inv_ext)
+	--	return
+	--end
+	
+	self._holder:RemoveBuff("pocket_ecm_jammer",peer_id)
+end
+
+function KineticTrackerHandler:on_start_pocket_ecm_feedback(inv_ext,end_time)
+	local peer = managers.network:session():peer_by_unit(inv_ext._unit)
+	local peer_id = peer and peer:id() or 1
+	
+	--if not peer_id then
+	--	self:Print("ERROR: KineticTrackerHandler:on_start_pocket_ecm_feedback() Bad peer/peer_id for inventory extension",inv_ext)
+	--	return
+	--end
+	
+	end_time = end_time or inv_ext:get_jammer_time()
+	
+	local interval,range = inv_ext:get_feedback_values()
+	if interval == 0 or range == 0 then
+		return false
+	end
+	local nr_ticks = math.max(1, math.floor(end_time / interval))
+	
+	self._holder:AddBuff("pocket_ecm_feedback",
+		{
+			value = nr_ticks,
+			end_t = TimerManager:game():time() + end_time,
+			total_t = end_time
+		},
+		false,
+		peer_id
+	)
+end
+
+function KineticTrackerHandler:on_stop_pocket_ecm_feedback(inv_ext)
+	local peer = managers.network:session():peer_by_unit(inv_ext._unit)
+	local peer_id = peer and peer:id() or 1
+	
+	--if not peer_id then
+	--	self:Print("ERROR: KineticTrackerHandler:on_stop_pocket_ecm_feedback() Bad peer/peer_id for inventory extension",inv_ext)
+	--	return
+	--end
+	
+	self._holder:RemoveBuff("pocket_ecm_feedback",peer_id)
+end
+
+function KineticTrackerHandler:on_pocket_ecm_feedback_tick(inv_ext)
+	local peer = managers.network:session():peer_by_unit(inv_ext._unit)
+	local peer_id = peer and peer:id() or 1
+	
+	--if not peer_id then
+	--	self:Print("ERROR: KineticTrackerHandler:on_pocket_ecm_feedback_tick() Bad peer/peer_id for inventory extension",inv_ext)
+	--	return
+	--end
+	
+	local jammer_data = inv_ext._jammer_data
+	if not jammer_data then
+		return
+	end
+	
+	self._holder:SetBuff("pocket_ecm_feedback",
+		{
+			value = jammer_data.nr_ticks
+		},
+		false,
+		peer_id
+	)
+end
+
+
+
 
 
 -- from here onward, buff-specific events

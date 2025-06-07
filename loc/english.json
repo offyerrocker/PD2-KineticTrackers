@@ -111,5 +111,12 @@
 	
 	
 	"menu_kitr_missing_dependency_colorpicker_title" : "Missing Color Picker Dependency"
-	"menu_kitr_missing_dependency_colorpicker_desc" : "You must have Color Picker installed to use this feature. Get it here: https://modwork.shop/29641"
+	"menu_kitr_missing_dependency_colorpicker_desc" : "You must have Color Picker installed to use this feature. Get it here: https://modwork.shop/29641",
+	
+	"kitr_buff_hacker_pecm_jammer_title" : "Pocket ECM Jammer",
+	"kitr_buff_hacker_pecm_feedback_title" : "Pocket ECM Feedback",
+	
+	"kitr_buff_copycat_primarykills_title" : "Tactical Reload (Primary Kills)",
+	"kitr_buff_copycat_secondarykills_title" : "Tactical Reload (Secondary Kills)"
+	
 }

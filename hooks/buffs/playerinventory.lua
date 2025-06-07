@@ -1,13 +1,19 @@
-
-Hooks:PostHook(PlayerInventory,"_start_feedback_effect","noblehud_buff_pocket_ecm_jammer_feedback",function(self,end_time,interval,range)
-	NobleHUD:AddBuff("pocket_ecm_jammer_feedback",{end_t = end_time or (TimerManager:game():time() + self:get_jammer_time()),timer_source = "game"})
+Hooks:PostHook(PlayerInventory,"_start_jammer_effect","kt_plinv_startjammer",function(self,end_time)
+	managers.kinetictrackers:on_start_pocket_ecm_jammer(self,end_time)
 end)
 
-Hooks:PostHook(PlayerInventory,"_start_jammer_effect","noblehud_buff_pocket_ecm_jammer",function(self,end_time)
-	NobleHUD:AddBuff("pocket_ecm_jammer",{end_t = end_time or (TimerManager:game():time() + self:get_jammer_time()),timer_source = "game"})
+Hooks:PostHook(PlayerInventory,"_stop_jammer_effect","kt_plinv_stopjammer",function(self)
+	managers.kinetictrackers:on_stop_pocket_ecm_jammer(self)
 end)
 
-Hooks:PostHook(PlayerInventory,"_stop_jammer_effect","noblehud_buff_pocket_ecm_jammer_remove",function(self,end_time)
---	NobleHUD:RemoveBuff("pocket_ecm_jammer")
+Hooks:PostHook(PlayerInventory,"_start_feedback_effect","kt_plinv_startfeedback",function(self,end_time)
+	managers.kinetictrackers:on_start_pocket_ecm_feedback(self,end_time)
 end)
---NobleHUD:AddBuff("pocket_ecm_jammer",{end_t = (TimerManager:game():time() + 6),timer_source = "game"})
+
+Hooks:PostHook(PlayerInventory,"_stop_feedback_effect","kt_plinv_stopfeedback",function(self)
+	managers.kinetictrackers:on_stop_pocket_ecm_feedback(self)
+end)
+
+Hooks:PostHook(PlayerInventory,"_do_feedback","kt_plinv_dofeedback",function(self)
+	managers.kinetictrackers:on_pocket_ecm_feedback_tick(self)
+end)

@@ -62,7 +62,7 @@
 			"script_path" : "hooks/buffs/playerdamage.lua"
 		},
 		{
-			"DISABLEDhook_id" : "lib/units/beings/player/playerinventory",
+			"hook_id" : "lib/units/beings/player/playerinventory",
 			"script_path" : "hooks/buffs/playerinventory.lua"
 		},
 		{
@@ -70,7 +70,7 @@
 			"script_path" : "hooks/buffs/hudteammate.lua"
 		},
 		{
-			"DISABLEDhook_id" : "core/lib/managers/coreenvironmentcontrollermanager",
+			"hook_id" : "core/lib/managers/coreenvironmentcontrollermanager",
 			"script_path" : "hooks/buffs/coreenvironmentcontrollermanager.lua"
 		},
 		{
