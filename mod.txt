@@ -17,25 +17,32 @@
 			"hook_id" : "lib/setups/gamesetup",
 			"script_path" : "hooks/gamesetup.lua"
 		},
+		{
+			"hook_id" : "lib/setups/setup",
+			"script_path" : "hooks/setup.lua"
+		},
+		{
+			"hook_id" : "lib/managers/hudmanager",
+			"script_path" : "hooks/hudmanager.lua"
+		},
 		
 		
 		{
-			"hook_id" : "lib/managers/menumanager",
+			"hook_id" : "lib/setups/setup",
 			"script_path" : "classes/KineticTrackerCore.lua"
 		},
 		{
-			"hook_id" : "lib/managers/menumanager",
-			"script_path" : "classes/KineticTrackerHolder.lua"
+			"DISABLEDhook_id" : "lib/managers/menumanager",
+			"DISABLEDscript_path" : "classes/KineticTrackerHolder.lua"
 		},
 		{
-			"hook_id" : "lib/managers/menumanager",
-			"script_path" : "classes/KineticTrackerItem.lua"
+			"DISABLEDhook_id" : "lib/managers/menumanager",
+			"DISABLEDscript_path" : "classes/KineticTrackerItem.lua"
 		},
 		{
-			"hook_id" : "lib/managers/menumanager",
-			"script_path" : "classes/QuickAnimate.lua"
+			"DISABLEDhook_id" : "lib/managers/menumanager",
+			"DISABLEDscript_path" : "classes/QuickAnimate.lua"
 		},
-
 
 
 		{

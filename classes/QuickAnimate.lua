@@ -14,13 +14,7 @@ My rebuttal is as follows:
 Please contact me if you need help with using or understanding QuickAnimate.
 	written by Offyerrocker
 --]]
-local THIS_VERSION = 5
-
-if QuickAnimate and QuickAnimate.VERSION and (QuickAnimate.VERSION >= THIS_VERSION) then 
-	log(ModPath .. ": QuickAnimate version " .. tostring(QuickAnimate.VERSION) .. " already exists")
-	return
-end
-QuickAnimate = QuickAnimate or class()
+local QuickAnimate = QuickAnimate or class()
 ---
 --v2 experimental: added parent class to default getting animate functions from
 --v3: allowed passing third "paused" argument when using BeardLib updater type, added is_animating func
@@ -33,7 +27,7 @@ QuickAnimate.updater_types = {
 	none = 3
 }
 
-QuickAnimate.VERSION = THIS_VERSION
+QuickAnimate.VERSION = 5
 
 QuickAnimate._animate_targets = {}
 QuickAnimate._animate_waits = 0 --used for unique number identifiers for animate_wait() calls
@@ -249,3 +243,5 @@ function QuickAnimate:debugUpdateAnimate(t,dt)
 		end
 	end
 end
+
+return QuickAnimate

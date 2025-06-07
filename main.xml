@@ -1,5 +1,8 @@
 <mod name="KineticTrackers" author="Offyerrocker" color="Color(1,1,1)" >
-	<AssetUpdates id="35785" version="0.0.1" provider="modworkshop" install_directory="mods/" version_is_number="false" />
+	<!--
+	<AssetUpdates id="52000" version="1.0.0" provider="modworkshop" install_directory="mods/" version_is_number="false" />
+	-->
+	
 	<Localization directory="loc" default="english.json">
 		<loc file="english.json" language="english" />
 	</Localization>

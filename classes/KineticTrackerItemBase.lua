@@ -1,4 +1,186 @@
-KineticTrackerItem = KineticTrackerItem or class()
+-- ui element for each item
+local KineticTrackerItemBase = blt_class()
+
+KineticTrackerItemBase.STYLE = {
+	panel_width = 256,
+	panel_height = 32,
+	icon_max_width = 24,
+	icon_max_height = 24,
+	icon_halign = "left",
+	icon_valign = "center",
+	icon_blend_mode = "normal",
+	buff_label_halign = "left",
+	buff_label_valign = "center",
+	buff_label_font = tweak_data.hud.medium_font,
+	buff_label_font_size = 16,
+	buff_label_blend_mode = "normal",
+	buff_label_alpha = 1,
+	buff_label_visible = true,
+	buff_label_align_to_icon = true,
+	primary_label_halign = "left",
+	primary_label_valign = "center",
+	primary_label_font = tweak_data.hud.medium_font,
+	primary_label_font_size = 16,
+	primary_label_align_to_name = true,
+	primary_label_blend_mode = "normal",
+	primary_label_alpha = 1,
+	secondary_label_halign = "left",
+	secondary_label_valign = "center",
+	secondary_label_font = tweak_data.hud.medium_font_noshadow,
+	secondary_label_font_size = 16,
+	secondary_label_blend_mode = "normal",
+	secondary_label_align_to_primary = true,
+	secondary_label_alpha = 1,
+	reversed_color_scheme = false,
+	primary_bg_blend_mode = "normal",
+	primary_bg_alpha = 0.66,
+	primary_bg_visible = false,
+	
+	margin_small = 2
+}
+
+
+function KineticTrackerItemBase:init(id,params,parent_panel)
+	self._animthread_fade = nil
+	self._animthread_sort = nil
+	
+	self:recreate_panel(id,params,parent_panel)
+end
+
+function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
+	local id = params.id
+	local texture_data = params.texture_data
+	local style = self.STYLE
+	local color_1 = Color.white
+	local color_2 = Color.blue
+	local texture,texture_rect
+	
+	local buff_text = params.buff_text
+	local primary_text = params.primary_text
+	local secondary_text = params.secondary_text
+	
+	local panel = parent_panel:panel({
+		name = id,
+		w = style.panel_width,
+		h = style.panel_height,
+		visible = true
+	})
+	self._panel = panel
+	local debug_rect = panel:rect({
+		name = "debug",
+		layer = -100,
+		alpha = 0.2,
+		color = Color(math.random(),math.random(),1)
+	})
+	local icon_frame = panel:panel({
+		name = "icon_frame",
+		w = style.icon_max_width,
+		h = style.icon_max_height,
+		layer = nil
+	})
+	self._icon_frame = icon_frame
+	local icon = icon_frame:bitmap({
+		name = "icon",
+		x = 0,
+		y = 0,
+		w = style.icon_max_width,
+		h = style.icon_max_height,
+		valign = "grow",
+		halign = "grow",
+		texture = texture_data.texture,
+		texture_rect = texture_data.texture_rect,
+		color = color_1,
+		blend_mode = style.icon_blend_mode,
+		alpha = 1,
+		visible = true,
+		layer = 1
+	})
+	self._icon = icon
+	
+	-- should be used for name label
+	local name_label = panel:text({
+		name = "name_label",
+		text = buff_text,
+		font = style.secondary_label_font,
+		font_size = style.secondary_label_font_size,
+		x = icon_frame:right() + style.margin_small,
+		align = "left",
+		vertical = "center",
+		valign = "grow",
+		halign = "grow",
+		color = color_2,
+		blend_mode = style.secondary_label_blend_mode,
+		alpha = style.secondary_label_alpha,
+		layer = 2
+	})
+	self._name_label = name_label
+	
+	--local _x,_y,_w,_h = text_1:text_rect()
+	
+	--[[
+	local text_bg_rect = panel:rect({
+		name = "text_bg_rect",
+		x = _x - margin,
+		y = _y - margin,
+		w = _w + margin + margin,
+		h = _h + margin + margin,
+		color = Color.black,
+		blend_mode = "normal",
+		alpha = 0.75,
+		visible = true,
+		layer = 1
+	})
+	--]]
+	
+end
+
+
+
+function KineticTrackerItemBase:set_icon_color(color)
+	self._icon:set_color(color)
+end
+function KineticTrackerItemBase:set_name_text(s)
+	self._name_label:set_text(s)
+end
+function KineticTrackerItemBase:set_title_text(s)
+	--self._title_text:set_text(s)
+end
+function KineticTrackerItemBase:set_subtitle_text(s)
+	--self._subtitle_text:set_text(s)
+end
+function KineticTrackerItemBase:set_title_color(color)
+	--self._title_text:set_color(color)
+end
+function KineticTrackerItemBase:set_subtitle_color(color)
+	--self._subtitle_text:set_color(color)
+end
+
+-- used for visual indication of timer progress
+function KineticTrackerItemBase:set_progress(n) -- float [0-1] progress of timer, in total
+
+end
+
+function KineticTrackerItemBase:destroy()
+	if alive(self._panel) then
+		self._panel:parent():remove(self._panel)
+	end
+end
+
+
+do return KineticTrackerItemBase end
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 --utils

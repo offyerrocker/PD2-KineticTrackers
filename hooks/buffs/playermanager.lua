@@ -1,4 +1,111 @@
+Hooks:PostHook(PlayerManager,"check_skills","kt_pm_checkskills",function(self,...)
+	Hooks:Call("PlayerManager_OnCheckSkills",self,...)
+	KineticTrackerCore:OnAddUpdaters(managers.hud)
+end)
 	
+Hooks:PostHook(PlayerManager,"set_property","kt_pm_on_set_property",function(self,name,value)
+	managers.kinetictrackers:on_set_property(self,name,value)
+end)
+
+Hooks:PostHook(PlayerManager,"add_to_property","kt_pm_on_add_property",function(self,name,value)
+	managers.kinetictrackers:on_add_to_property(self,name,value)
+end)
+
+Hooks:PostHook(PlayerManager,"mul_to_property","kt_pm_on_mul_property",function(self,name,value)
+	managers.kinetictrackers:on_mul_to_property(self,name,value)
+end)
+
+Hooks:PostHook(PlayerManager,"remove_property","kt_pm_on_rem_property",function(self,name)
+	managers.kinetictrackers:on_remove_property(self,name)
+end)
+
+
+Hooks:PostHook(PlayerManager,"activate_temporary_property","kt_pm_on_activate_temp_property",function(self,name,time,value)
+	managers.kinetictrackers:on_activate_temporary_property(self,name,time,value)
+end)
+
+Hooks:PostHook(PlayerManager,"add_to_temporary_property","kt_pm_on_add_temp_property",function(self,name,time,value)
+	managers.kinetictrackers:on_add_to_temporary_property(self,name,time,value)
+end)
+
+Hooks:PostHook(PlayerManager,"remove_temporary_property","kt_pm_on_add_temp_property",function(self,name)
+	managers.kinetictrackers:on_remove_temporary_property(self,name)
+end)
+
+Hooks:PostHook(PlayerManager,"activate_temporary_upgrade","kt_pm_on_activate_temp_upgrade",function(self,category,upgrade)
+	managers.kinetictrackers:on_activate_temporary_upgrade(self,category,upgrade)
+end)
+
+Hooks:PostHook(PlayerManager,"deactivate_temporary_upgrade","kt_pm_on_deactivate_temp_upgrade",function(self,category,upgrade)
+	managers.kinetictrackers:on_deactivate_temporary_upgrade(self,category,upgrade)
+end)
+
+Hooks:PostHook(PlayerManager,"activate_temporary_upgrade_by_level","kt_pm_on_activate_temp_upgrade_level",function(self,category,upgrade,level)
+	managers.kinetictrackers:on_activate_temporary_upgrade_by_level(self,category,upgrade,level)
+end)
+
+
+
+Hooks:PostHook(PlayerManager,"aquire_cooldown_upgrade","kt_pm_on_acquire_cooldown_upgrade",function(self,upgrade)
+	managers.kinetictrackers:on_aquire_cooldown_upgrade(self,upgrade)
+end)
+
+Hooks:PostHook(PlayerManager,"unaquire_cooldown_upgrade","kt_pm_on_unacquire_cooldown_upgrade",function(self,upgrade)
+	managers.kinetictrackers:on_unaquire_cooldown_upgrade(self,upgrade)
+end)
+
+Hooks:PostHook(PlayerManager,"disable_cooldown_upgrade","kt_pm_on_disable_cooldown_upgrade",function(self,category,upgrade)
+	managers.kinetictrackers:on_disable_cooldown_upgrade(self,category,upgrade)
+end)
+
+
+
+Hooks:PreHook(PlayerManager,"on_headshot_dealt","kt_pm_on_headshot",function(self)
+	managers.kinetictrackers:on_headshot_dealt(self)
+end)
+
+Hooks:PostHook(PlayerManager,"_on_enemy_killed_bloodthirst","kt_pm_on_bloodthirst",function(self,equipped_unit,variant,killed_unit)
+	managers.kinetictrackers:on_enemy_killed_bloodthirst(self,equipped_unit,variant,killed_unit)
+end)
+
+Hooks:PostHook(PlayerManager,"reset_melee_dmg_multiplier","kt_pm_on_reset_melee_dmg_mul",function(self)
+	managers.kinetictrackers:on_reset_melee_dmg_multiplier(self)
+end)
+
+Hooks:PostHook(PlayerManager,"set_melee_dmg_multiplier","kt_pm_on_set_melee_dmg_mul",function(self,value)
+	managers.kinetictrackers:on_set_melee_dmg_multiplier(self,value)
+end)
+
+Hooks:PreHook(PlayerManager,"_on_expert_handling_event","kt_pm_on_expert_handling",function(self,unit,attack_data)
+	managers.kinetictrackers:on_expert_handling_event(self,unit,attack_data)
+end)
+
+Hooks:PreHook(PlayerManager,"_on_enter_trigger_happy_event","kt_pm_on_trigger_happy",function(self,unit,attack_data)
+	managers.kinetictrackers:on_enter_trigger_happy_event(self,unit,attack_data)
+end)
+
+Hooks:PreHook(PlayerManager,"_on_enter_shock_and_awe_event","kt_pm_on_shockandawe",function(self)
+	managers.kinetictrackers:on_enter_shock_and_awe_event(self)
+end)
+
+
+Hooks:PostHook(PlayerManager,"_on_messiah_recharge_event","kt_pm_on_messiah_recharge",function(self)
+	managers.kinetictrackers:on_messiah_recharge_event(self)
+end)
+
+Hooks:PreHook(PlayerManager,"_on_messiah_event","kt_pm_on_messiah_event",function(self)
+	managers.kinetictrackers:on_messiah_event(self)
+end)
+
+Hooks:PostHook(PlayerManager,"use_messiah_charge","kt_pm_on_messiah_use",function(self)
+	managers.kinetictrackers:on_use_messiah_charge(self)
+end)
+
+
+
+
+do return end
+
 Hooks:PostHook(PlayerManager,"check_skills","playermanager_checkskills_kinetictrackers",function(self,...)
 	Hooks:Call("PlayerManager_OnCheckSkills",self,...)
 end)

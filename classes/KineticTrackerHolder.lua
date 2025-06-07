@@ -1,3 +1,454 @@
+-- holds a record of all current buffs
+
+
+local KineticTrackerHolder = blt_class()
+
+KineticTrackerHolder.ALIGNMENT = {
+	TOP_LEFT = 1, -- anchored top, left aligned (fill left to right)
+	TOP_CENTER = 2, -- anchored top, center aligned (fill left to right)
+	TOP_RIGHT = 3, -- anchored top, right aligned (fill right to left)
+	BOTTOM_LEFT = 4, -- anchored bottom, left aligned (fill left to right)
+	BOTTOM_CENTER = 5, -- anchored bottom, center aligned (fill left to right)
+	BOTTOM_RIGHT = 6, -- anchored bottom, right aligned (fill right to left)
+	LEFT_TOP = 7, -- anchored left, top aligned (fill top to bottom)
+	LEFT_CENTER = 8, -- anchored left, vertical center aligned (fill top to bottom)
+	LEFT_BOTTOM = 9, -- anchored left, bottom aligned (fill bottom to top)
+	RIGHT_TOP = 10, -- anchored right, top aligned (fill top to bottom)
+	RIGHT_CENTER = 11, -- anchored right, vertical center aligned (fill top to bottom)
+	RIGHT_BOTTOM = 12 -- anchored right, bottom aligned (fill bottom to top)
+}
+
+KineticTrackerHolder._format_timer_funcs = {
+	-- flashbang = function
+}
+
+function KineticTrackerHolder:init(_settings,_tweak_data,panel)
+	self._settings = _settings
+	self._tweak_data = _tweak_data
+	--managers.hud:add_updator("kinetictracker_update",callback(self,self,"Update"))
+	
+	if _settings.buff_style == 2 then
+		self._gui_class = KineticTrackerCore:require("classes/KineticTrackerItemBase")
+	else
+		self._gui_class = KineticTrackerCore:require("classes/KineticTrackerItemBase")
+	end
+	
+	-- list of all active buffs (sorted);
+	-- this list will be iterated through
+	self._buffs = {}
+	
+	-- for manually updating buffs that need to be checked every frame
+	-- (like biker)
+	self._updaters = {}
+	
+--	self._panel = nil
+	
+--	self._display = KineticTrackerDisplay:new()
+	--hooks:add(on_hud_hidden,callback_hide_display) --check settings to see if buffs should be hidden on hud hide?
+	
+	self:CreatePanel(panel)
+end
+
+function KineticTrackerHolder:CreatePanel(panel)
+	if panel and alive(panel) and not alive(self._panel) then
+		self._panel = panel:panel({
+			name = "tracker_display_panel"
+		})
+	end
+end
+
+function KineticTrackerHolder:AddBuff(id,params,skip_sort)
+	--Print("KineticTrackerHolder:AddBuff()",id,params.value)
+	
+	local settings = self._settings
+	local sort_by_priority = settings.sort_by_priority
+	
+	local buff_tweakdata = id and self._tweak_data.buffs[id]
+	local buff_display_setting = settings.buffs[id]
+	
+	if buff_tweakdata.disabled then 
+		--don't keep track of hard-disabled buffs;
+		--unlike soft-disabled buffs, these have no possibility of being re-enabled in a session
+		return
+	end
+	
+	local existing_buff = self:GetBuff(id)
+	if existing_buff then 
+		self:_SetBuff(existing_buff,params)
+		return
+	end
+	
+	local icon_data = buff_tweakdata.icon_data
+	
+	local priority
+	if sort_by_priority then 
+		priority = buff_tweakdata.priority or 1
+	else
+		priority = #self._buffs + 1
+	end
+	
+	local texture_data = {}
+	if icon_data.source == "skill" then 
+		texture_data.texture = "guis/textures/pd2/skilltree_2/icons_atlas_2"
+		local skill_icon_size = 80
+		local x,y = unpack(tweak_data.skilltree.skills[icon_data.skill_id].icon_xy)
+		texture_data.texture_rect = {x * skill_icon_size,y * skill_icon_size,skill_icon_size,skill_icon_size}
+	elseif icon_data.source == "perk" then
+		texture_data.texture,texture_data.texture_rect = self.get_specialization_icon_data_by_tier(icon_data.tree,icon_data.card,false)
+	elseif icon_data.source == "hud_icon" then 
+		texture_data.texture,texture_data.texture_rect = tweak_data.hud_icons:get_icon_data(icon_data.skill_id)
+	elseif icon_data.texture then 
+		texture_data.texture,texture_data.texture_rect = icon_data.texture,icon_data.texture_rect
+	end
+	
+	local gui_item
+	if alive(self._panel) then
+		gui_item = self._gui_class:new(id,{
+			buff_text = "qwerty",
+			primary_text = "asdf",
+			secondary_text = "123",
+			buff_data = buff_tweakdata,
+			texture_data = texture_data
+		},self._panel)
+		
+		local get_xy = self:get_align_callbacks(self._settings.orientation)
+		
+		local panel = gui_item._panel
+		
+		local panel_w,panel_h = self._panel:size()
+		local w,h = panel:size()
+		local num_buffs = #self._buffs+1
+		local x2,y2 = get_xy(num_buffs,num_buffs,w,h,panel_w,panel_h)
+		panel:set_position(x2,y2)
+		-- fadein
+		gui_item._animthread_fade = panel:animate(function(o)
+			over(0.15,function(lerp)
+				local n = math.sin(lerp * 90)
+				o:set_alpha(n * n)
+			end)
+			o:set_alpha(1)
+			gui_item._animthread_fade = nil
+		end)
+	end
+	
+	local new_buff = {
+		id = id,
+		value = params.value, -- O/nil, standard. whatever value represents the buff
+		end_t = params.end_t, -- float/nil, standard. remaining duration of the timer
+		total_t = params.total_t or (params.end_t and (params.end_t - Application:time())), -- float/nil, standard. default maximum of the timer
+		user_data = params.user_data, -- table/nil, nonstandard
+		gui_item = gui_item
+	}
+	
+	table.insert(self._buffs,priority,new_buff)
+	
+	self._format_timer_funcs[id] = self._format_timer_funcs[id] or self.get_format_time_func(settings.timer_precision_places,settings.timer_precision_threshold)
+	
+	if not skip_sort then
+		self:SortBuffs()
+	end
+	
+end
+
+
+function KineticTrackerHolder.get_format_time_func(precision,precision_threshold) -- buff_id
+--	local td = self.tweak_data.buffs[buff_id]
+--	local setting = self.settings[buff_id]
+--	if not setting then return end
+--	local precision = setting.precision
+--	local precision = self.settings.timer_precision_places
+--	local precision_threshold = 5
+	local show_minutes = true
+	
+	return function (seconds)
+		local str = ""
+		local SECONDS_ABBREV_STR = "s"
+		local seconds_format = "%02d"
+		local minutes_format = "%01i"
+		if precision >= 1 and seconds < precision_threshold then 
+	--		seconds_format = "%02." .. string.format("%i",precision) .. "f"
+			seconds_format = seconds_format .. string.format(".%02i",(seconds - math.floor(seconds)) * math.pow(10,precision))
+		end
+		
+		if show_minutes then 
+			local _minutes = math.min(seconds / 60,99)
+			local _seconds = seconds % 60
+			str = string.format(minutes_format .. ":" .. seconds_format,_minutes,_seconds)
+		else
+			str = string.format(seconds_format,seconds) .. SECONDS_ABBREV_STR
+		end
+		
+		return str
+	end
+	
+end
+
+function KineticTrackerHolder.get_specialization_icon_data_by_tier(spec,tier,no_fallback)
+	local sm = managers.skilltree
+	local st = tweak_data.skilltree
+	
+	spec = spec or sm:get_specialization_value("current_specialization")
+
+	local data = st.specializations[spec]
+	local max_tier = sm:get_specialization_value(spec, "tiers", "max_tier")
+	local tier_data = data and data[tier or max_tier] --this and the arg tier are the only things changed
+
+	if not tier_data then
+		if no_fallback then
+			return
+		else
+			return tweak_data.hud_icons:get_icon_data("fallback")
+		end
+	end
+
+	local guis_catalog = "guis/" .. (tier_data.texture_bundle_folder and "dlcs/" .. tostring(tier_data.texture_bundle_folder) .. "/" or "")
+	local x = tier_data.icon_xy and tier_data.icon_xy[1] or 0
+	local y = tier_data.icon_xy and tier_data.icon_xy[2] or 0
+
+	return guis_catalog .. "textures/pd2/specialization/icons_atlas", {
+		x * 64,
+		y * 64,
+		64,
+		64
+	}
+end
+
+function KineticTrackerHolder:get_align_callbacks(index)
+	index = index or 1
+	
+	if 		index == self.ALIGNMENT.TOP_LEFT		then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_row = math.floor(panel_w / w)
+			local j = i-1
+			local x = (j % num_per_row) * w
+			local y = math.floor(j / num_per_row) * h
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.TOP_CENTER		then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_row = math.floor(panel_w / w)
+			local j = i-1
+			local x = panel_w/2 - (w * (j-(num_per_row/2)))
+			local y = math.floor(j / num_per_row) * h
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.TOP_RIGHT		then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_row = math.floor(panel_w / w)
+			local j = i-1
+			local x = panel_w - (j % num_per_row) * w
+			local y = math.floor(j / num_per_row) * h
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.BOTTOM_LEFT		then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_row = math.floor(panel_w / w)
+			local j = i-1
+			local x = (j % num_per_row) * w
+			local y = math.ceil(j / num_per_row) * h
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.BOTTOM_CENTER	then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_row = math.floor(panel_w / w)
+			local j = i-1
+			local x = panel_w/2 - (w * ((j % num_per_row)-(num_per_row/2)))
+			local y = panel_h - math.ceil(j / num_per_row) * h
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.BOTTOM_RIGHT	then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_row = math.floor(panel_w / w)
+			local j = i-1
+			local x = (j % num_per_row) * w
+			local y = math.ceil(j / num_per_row) * h
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.LEFT_TOP		then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_column = math.floor(panel_h / h)
+			local j = i-1
+			local x = math.floor(j / num_per_column) * w
+			local y = (j % num_per_column) * h
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.LEFT_CENTER		then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_column = math.floor(panel_h / h)
+			local j = i-1
+			local x = math.floor(j / num_per_column) * w
+			local y = panel_h/2 - (h * ((j % num_per_column)-(num_per_column/2)))
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.LEFT_BOTTOM		then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_column = math.floor(panel_h / h)
+			local j = i-1
+			local x = math.floor(j / num_per_column) * w
+			local y = panel_h - (j % num_per_column) * h
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.RIGHT_TOP		then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_column = math.floor(panel_h / h)
+			local j = i-1
+			local x = panel_w - math.ceil(j / num_per_column) * w
+			local y = (j % num_per_column) * h
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.RIGHT_CENTER	then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_column = math.floor(panel_h / h)
+			local j = i-1
+			local x = panel_w - math.ceil(j / num_per_column) * w
+			local y = panel_h/2 - (h * ((j % num_per_column)-(num_per_column/2)))
+			return x,y
+		end
+	elseif	index == self.ALIGNMENT.RIGHT_BOTTOM	then
+		return function(i,total,w,h,panel_w,panel_h)
+			local num_per_column = math.floor(panel_h / h)
+			local j = i-1
+			local x = panel_w - math.ceil(j / num_per_column) * w
+			local y = panel_h - (j % num_per_column) * h
+			return x,y
+		end
+	end
+	error("Unknown alignment index:" .. tostring(index))
+end
+
+function KineticTrackerHolder:SortBuffs()
+	local get_xy = self:get_align_callbacks(self._settings.orientation)
+	local anim_sort_duration_long = 1
+	local anim_sort_duration_short = 0.5
+	local panel_w,panel_h = self._panel:size()
+	local num_buffs = #self._buffs
+	for i,buff in ipairs(self._buffs) do 
+		local gui_item = buff.gui_item
+		if gui_item then
+			local panel = gui_item._panel
+			
+			local w,h = panel:size()
+			local x2,y2 = get_xy(i,num_buffs,w,h,panel_w,panel_h)
+			
+			local x1,y1 = panel:position()
+			local dx,dy = x2-x1,y2-y1
+			
+			if gui_item._animthread_sort then
+				panel:stop(gui_item._animthread_sort)
+				gui_item._animthread_sort = nil
+				-- sort at full speed instead of sin
+				gui_item._animthread_sort = panel:animate(function(o)
+					over(anim_sort_duration_long,function(lerp)
+						local n = math.sin(lerp * 90)
+						o:set_position(x1+dx*n,y1+dy*n)
+					end)
+					o:set_position(x2,y2)
+					gui_item._animthread_sort = nil
+				end)
+			else
+				gui_item._animthread_sort = panel:animate(function(o)
+					over(anim_sort_duration_long,function(lerp)
+						local n = math.sin(lerp * 90) ^ 2
+						o:set_position(x1+dx*n,y1+dy*n)
+					end)
+					o:set_position(x2,y2)
+					gui_item._animthread_sort = nil
+				end)
+			end
+		end
+	end
+end
+
+function KineticTrackerHolder:_SetBuff(buff,params,skip_sort)
+	for k,v in pairs(params) do 
+		if type(v) ~= "table" then
+			buff[k] = v
+		end
+	end
+	buff.user_data = params.user_data or buff.user_data
+	
+	if not skip_sort then
+		self:SortBuffs()
+	end
+	
+	return buff
+end
+
+function KineticTrackerHolder:SetBuff(id,params)
+	local buff = self:GetBuff(id)
+	if not buff then
+		return self:AddBuff(id,params)
+	end
+	return self:_SetBuff(buff,params)
+end
+
+function KineticTrackerHolder:GetBuff(id)
+	for i,buff_data in pairs(self._buffs) do 
+		if buff_data.id == id then 
+			return buff_data,i
+		end
+	end
+end
+
+function KineticTrackerHolder:RemoveBuff(id)
+	for i,buff_data in pairs(self._buffs) do 
+		if buff_data.id == id then 
+			self:_RemoveBuff(i)
+			return table.remove(self._buffs,i)
+		end
+	end
+end
+
+function KineticTrackerHolder:_RemoveBuff(buff_data)
+	if buff_data.gui_item then
+		buff_data.gui_item:destroy()
+	end
+end
+
+function KineticTrackerHolder:Update(t,dt)
+	for i,data in ipairs(self._updaters) do 
+		data.callback(t,dt)
+	end
+	for i=#self._buffs,1,-1 do 
+		local buff = self._buffs[i]
+		if buff.end_t then
+			if buff.end_t <= t then
+				table.remove(self._buffs,i)
+				self:_RemoveBuff(buff)
+			else
+				if buff.gui_item then
+					local time_rem = buff.end_t - t
+					
+					if buff.total_t then
+						-- feed visual progress
+						buff.gui_item:set_progress(time_rem / buff.total_t)
+					end
+					
+					buff.gui_item:set_name_text(self._format_timer_funcs[buff.id](time_rem))
+				end
+			end
+		end
+	end
+end
+
+-- higher priority runs first
+function KineticTrackerHolder:AddUpdater(id,callback,priority)
+	priority = priority or 1
+	table.insert(self._updaters,{id=id,callback=callback,priority=priority})
+	table.sort(self._updaters,function(a,b) 
+		return a.priority > b.priority
+	end)
+end
+
+
+
+
+do return KineticTrackerHolder end
+
+------------------------------------------------------
+
+local KineticTrackerItemDestiny = {}
+local KineticTrackerItemWarframe = {}
 
 Hooks:Register("KineticTrackers_OnBuffDataLoaded")
 
@@ -42,7 +493,6 @@ end
 function KineticTrackerHolder:init(core)
 	self._core = core
 	self.tweak_data = core.tweak_data
-	managers.hud:add_updator("kinetictracker_update",callback(self,self,"Update"))
 	
 	self._buffs = {}
 --	self._display = KineticTrackerDisplay:new()

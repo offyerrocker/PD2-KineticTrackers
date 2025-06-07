@@ -83,7 +83,7 @@
 		value_threshold = 2,
 		timer_enabled = true,
 		timer_minutes_display = 1,--1 = minutes, 2 = seconds
-		timer_precision = 2,
+		timer_precision_places = 2,
 		timer_flashing_mode = 1,
 		timer_flashing_threshold = 3,
 		timer_flashing_speed = 1,
@@ -194,29 +194,31 @@
 	
 	
 	
-	
+	options:
+		- per-buff enable/disable
+		- color coding for:
+			- normal
+			- Max stacks/value
+			- cooldown
 	
 	
 	buffs to be added:
-		flashbang
-		winters
-		inspire basic cooldown
-		inspire basic
-		forced friendship (damage absorption from civs)
-		partners in crime
-		forced friendship
-		ammo efficiency
-		die hard
-		bullseye
-		scavenger
-		fully loaded
+		flashbang (timer)
+		winters (multiplier)
+		inspire basic cooldown (timer)
+		inspire basic (timer)
+		forced friendship (damage absorption from civs) (absorption amount)
+		partners in crime (hp bonus/status)
+		die hard (interaction dmg resist; should be aggregated)
+		bullseye cooldown (timer)
+		fully loaded (stacking chance)
 		chameleon (omniscience)
-		unseen_strike
-		swan song
-		messiah ready/messiah charges
-		bloodthirst basic
-		bloodthirst aced
-		berserker basic/aced
+		unseen_strike (activation timer, duration timer)
+		swan song (timer)
+		messiah ready/messiah charges (status/stack)
+		bloodthirst basic (melee damage increase)
+		bloodthirst aced (timer/50% faster reload speed)
+		berserker basic/aced (ratio or melee/ranged bonus)
 		
 		marathon man (damage reduction in medium range of enemies)
 		hostage situation (damage resistance per hostage)
@@ -254,9 +256,14 @@
 		leech throwable, temp invuln on healthgate
 		leech throwable, temp invuln on healthgate
 		
+		copycat things?
 		
 		
 	i probably don't want to implement:
+		ammo efficiency (headshot counter)
+			* not very necessary
+		scavenger (kill counter)
+			* not very necessary
 		stockholm syndrome aced- hostage autotrade ready
 			* only relevant when the player is dead; mod is designed to work when you are not dead
 		stable shot
@@ -292,6 +299,8 @@
 	
 --]]
 
+-- static class
+
 KineticTrackerCore = _G.KineticTrackerCore or {}
 
 
@@ -299,6 +308,8 @@ KineticTrackerCore._path = ModPath
 KineticTrackerCore._options_path = ModPath .. "menu/menu_main.json"
 KineticTrackerCore._default_localization_path = ModPath .. "loc/english.json"
 KineticTrackerCore._save_path = SavePath .. "KineticTrackers.json"
+KineticTrackerCore.tweak_data = nil
+KineticTrackerCore._require_libs = {} -- cached lua chunks from this mod's implementation of require via loadfile, keyed by path
 
 KineticTrackerCore.default_palettes = {
 	"e32727",
@@ -337,18 +348,20 @@ KineticTrackerCore.default_settings = {
 	y = 0,
 	w = 1280,
 	h = 720,
-	halign = 1, --1: left, 2: right, 3: center
-	valign = 1, --1: top, 2: right, 3: center
-	hdir = 1, --1: left to right, 2: right to left
-	vdir = 1, --1: top to bottom, 2: bottom to top
+	orientation = 1, -- int [1-12]; see KineticTrackerHolder for more info
+	
+	buff_style = 1, -- 1: destiny 2 style; 2: warframe style
 	
 	timer_enabled = true,
-	timer_minutes_display = 1,--1 = minutes, 2 = seconds
-	timer_precision = 2,
+	timer_minutes_display = 1,
+	timer_precision_places = 2,
+	timer_precision_threshold = 5, -- at below 5s, the timer will start showing decimal precision (if timer_precision_places is enabled)
 	timer_flashing_mode = 1,
 	timer_flashing_threshold = 3,
 	timer_flashing_speed = 1,
 	color = "ffffff",
+	
+	sort_by_priority = false,
 	
 	palettes = table.deep_map_copy(KineticTrackerCore.default_palettes),
 	buffs = {
@@ -356,8 +369,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -427,8 +439,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -438,8 +449,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -449,8 +459,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -460,8 +469,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -471,8 +479,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -482,8 +489,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -493,8 +499,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -504,8 +509,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -515,8 +519,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -526,8 +529,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -567,8 +569,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 1,
+			timer_precision_places = 1,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -578,8 +579,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -589,8 +589,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -610,8 +609,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -626,8 +624,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = false,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -641,8 +638,7 @@ KineticTrackerCore.default_settings = {
 		bullet_storm = {
 			enabled = true,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -677,8 +673,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -688,8 +683,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -699,8 +693,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -710,8 +703,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -721,8 +713,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -732,8 +723,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -743,8 +733,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -754,8 +743,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -765,8 +753,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -776,8 +763,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -787,8 +773,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -798,8 +783,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -809,8 +793,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -820,8 +803,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -841,8 +823,7 @@ KineticTrackerCore.default_settings = {
 			enabled = false,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -852,8 +833,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -888,8 +868,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -899,8 +878,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -915,8 +893,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -936,8 +913,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 1,
 			timer_flashing_speed = 1,
@@ -952,8 +928,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -963,8 +938,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -974,8 +948,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -985,8 +958,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -996,8 +968,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1007,8 +978,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1018,8 +988,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1044,8 +1013,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1055,8 +1023,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1066,8 +1033,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1077,8 +1043,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1088,8 +1053,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1099,8 +1063,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1110,8 +1073,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1121,8 +1083,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1132,8 +1093,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1143,8 +1103,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 2,
 			timer_flashing_speed = 1,
@@ -1154,8 +1113,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1165,8 +1123,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1176,8 +1133,7 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
@@ -1187,13 +1143,33 @@ KineticTrackerCore.default_settings = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
-			timer_minutes_display = 1,
-			timer_precision = 2,
+			timer_precision_places = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		copycat_primarykills = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_precision_places = 2,
+			timer_flashing_mode = 1,
+			timer_flashing_threshold = 3,
+			timer_flashing_speed = 1,
+			color = "ffffff"
+		},
+		copycat_secondarykills = {
+			enabled = true,
+			value_threshold = 0,
+			timer_enabled = true,
+			timer_precision_places = 2,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
 			timer_flashing_speed = 1,
 			color = "ffffff"
 		}
+		
 	}
 }
 KineticTrackerCore.settings = table.deep_map_copy(KineticTrackerCore.default_settings)
@@ -1572,6 +1548,17 @@ KineticTrackerCore.menu_data = {
 			focus_changed_callback = nil,
 			menu_position = "perkdeck_hacker",
 			subposition = "after"
+		},
+		perkdeck_copycat = {
+			id = "menu_kitr_buff_category_perkdeck_copycat",
+			title = "menu_st_spec_23",
+			desc = "menu_kitr_buff_category_perkdeck_generic_desc",
+			parent = "menu_kitr_buff_category_perk",
+			area_bg = nil,
+			back_callback_name = nil,
+			focus_changed_callback = nil,
+			menu_position = "perkdeck_leech",
+			subposition = "after"
 		}
 	},
 	skilltree_lookup = { --ordered
@@ -1603,7 +1590,8 @@ KineticTrackerCore.menu_data = {
 		"perkdeck_stoic",
 		"perkdeck_tag_team",
 		"perkdeck_hacker",
-		"perkdeck_leech"
+		"perkdeck_leech",
+		"perkdeck_copycat"
 	},
 	buffs_lookup = { --indexed by string buff_id; populated on MenuManagerSetupCustomMenus
 	}
@@ -1634,63 +1622,67 @@ function KineticTrackerCore:Log(s,...)
 	end
 end
 
-function KineticTrackerCore.get_specialization_icon_data_by_tier(spec,tier,no_fallback)
-	local sm = managers.skilltree
-	local st = tweak_data.skilltree
-	
-	spec = spec or sm:get_specialization_value("current_specialization")
-
-	local data = st.specializations[spec]
-	local max_tier = sm:get_specialization_value(spec, "tiers", "max_tier")
-	local tier_data = data and data[tier or max_tier] --this and the arg tier are the only things changed
-
-	if not tier_data then
-		if no_fallback then
-			return
-		else
-			return tweak_data.hud_icons:get_icon_data("fallback")
-		end
-	end
-
-	local guis_catalog = "guis/" .. (tier_data.texture_bundle_folder and "dlcs/" .. tostring(tier_data.texture_bundle_folder) .. "/" or "")
-	local x = tier_data.icon_xy and tier_data.icon_xy[1] or 0
-	local y = tier_data.icon_xy and tier_data.icon_xy[2] or 0
-
-	return guis_catalog .. "textures/pd2/specialization/icons_atlas", {
-		x * 64,
-		y * 64,
-		64,
-		64
-	}
-end
-
-function KineticTrackerCore.concat_tbl_with_keys(a,pairsep,setsep,...)
-	local s = ""
-	if type(a) == "table" then 
-		pairsep = pairsep or " = "
-		setsetp = setsetp or ", "
-		for k,v in pairs(a) do 
-			if s ~= "" then 
-				s = s .. setsetp
-			end
-			s = s .. tostring(k) .. pairsep .. tostring(v)
-		end
+function KineticTrackerCore:require(path)
+	local _path = self._path .. path .. ".lua"
+	if self._require_libs[path] then
+		return self._require_libs[path]
+	elseif io.file_is_readable(_path) then
+		local result = blt.vm.dofile(_path)
+		self._require_libs[path] = result
+		return result
 	else
-		return AdvancedCrosshair.concat_tbl(a,sep,sep2,...)
+		error("KineticTrackerCore:require() File could not be read: " .. tostring(_path))
 	end
-	return s
 end
 
-function KineticTrackerCore.get_temporary_property_time(self,prop,default)
-	local time = Application:time()
-
-	if self._properties[prop] and time <= self._properties[prop][2] then
-		return self._properties[prop][2]
-	elseif self._properties[prop] then
-		self._properties[prop] = nil
+function KineticTrackerCore.table_traverse(tbl,cb,record,current_depth,max_depth)
+	current_depth = (current_depth and current_depth + 1) or 0
+	max_depth = max_depth or 3
+	if not record[tbl] then
+		record[tbl] = true
+		
+		for k,v in pairs(tbl) do 
+			if type(v) == "table" then
+				if current_depth <= max_depth then
+					traverse(v,cb,record,current_depth,max_depth)
+				end
+			else
+				cb(k,v)
+			end
+		end
 	end
+end
 
-	return default
+function KineticTrackerCore.format_time(seconds,precision,show_minutes)
+
+--	local style_index = 1
+--	local item_styles = {
+--		KineticTrackerItemDestiny,
+--		KineticTrackerItemWarframe
+--	}
+--	self._item_style = item_styles[style_index]
+--	self._item_style = self.STYLES[style_index]
+
+	local str = ""
+	local SECONDS_ABBREV_STR = "s"
+	local seconds_format = "%02d"
+	local minutes_format = "%02i"
+	
+	local precision_threshold = 5
+	if precision >= 1 and seconds < precision_threshold then 
+--		seconds_format = "%02." .. string.format("%i",precision) .. "f"
+		seconds_format = seconds_format .. string.format(".%02i",(seconds - math.floor(seconds)) * math.pow(10,precision))
+	end
+	
+	if show_minutes then 
+		local _minutes = math.min(seconds / 60,99)
+		local _seconds = seconds % 60
+		str = string.format(minutes_format .. ":" .. seconds_format,_minutes,_seconds)
+	else
+		str = string.format(seconds_format,seconds) .. SECONDS_ABBREV_STR
+	end
+	
+	return str
 end
 
 -------------------------------------------------------------
@@ -1741,167 +1733,34 @@ function KineticTrackerCore:IsLoggingEnabled()
 	return self.settings.logs_enabled
 end
 
-function KineticTrackerCore:GetBuffDisplaySettings(id)
-	
-	local buff_options = {
-		absorption = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		dodge_chance = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		crit_chance = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		damage_resistance = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		fixed_health_regen = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		health_regen = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		weapon_reload_speed = {
-			disabled = true,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 1
-		},
-		weapon_damage_bonus = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 1
-		},
-		
-		running_from_death_basic_swap_speed = {
-			disabled = true,
-			color = Color.white,
-			timer_enabled = true,
-			value_threshold = 0
-		},
-		running_from_death_aced = {
-			disabled = true,
-			color = Color.white,
-			timer_enabled = true,
-			value_threshold = 0
-		},
-		combat_medic_steelsight_mul = {
-			disabled = true,
-			color = Color.white,
-			timer_enabled = true,
-			value_threshold = 0
-		},
-		combat_medic_damage_mul = {
-			disabled = true,
-			color = Color.white,
-			timer_enabled = true,
-			value_threshold = 0
-		}
-		
-		
-	}
-	
-	
-	local default = {
-		value_threshold = false,
-		timer_enabled = true,
-		color = Color.white
-	} 
-	return self.settings.buffs[id] or buff_options[id] or default
-end
-
-function KineticTrackerCore:GetHUDPosition()
-	return self.settings.x,self.settings.y
-end
-
-function KineticTrackerCore:GetHUDVAlign()
-	return self.settings.valign
-end
-
-function KineticTrackerCore:GetHUDHAlign()
-	return self.settings.halign
-end
-
-function KineticTrackerCore:GetHUDVDirection()
-	return self.settings.vdir
-end
-
-function KineticTrackerCore:GetHUDHDirection()
-	return self.settings.hdir
-end
-
-function KineticTrackerCore:GetHUDWidth()
-	return self.settings.w
-end
-
-function KineticTrackerCore:GetHUDHeight()
-	return self.settings.h
-end
-
 -------------------------------------------------------------
 --*********************    Core functionality    *********************--
 -------------------------------------------------------------
 
-Hooks:Add("PlayerManager_OnCheckSkills","kinetictrackers_on_check_skills_add_listeners",function(pm)
+function KineticTrackerCore:Setup(_managers)
+	_managers = _managers or _G.managers
 	
-end)
+	local KineticTrackerHolder = self:require("classes/KineticTrackerHolder")
+	local holder = KineticTrackerHolder:new(self.settings,self.tweak_data)
+	self._holder = holder
+	
+	local KineticTrackerHandler = self:require("classes/KineticTrackerHandler")
+	_managers.kinetictrackers = KineticTrackerHandler:new(self.settings,self.tweak_data,holder)
+	
+	local QuickAnimate = self:require("classes/QuickAnimate")
+	self._animator = QuickAnimate:new("kinetictracker_animator",{parent = self,updater_type = QuickAnimate.updater_types.none,paused = false})
+end
 
-function KineticTrackerCore:AddGeneralBuffs()
-	if self._holder then 
-		self._holder:AddBuff("absorption",{})
-		self._holder:AddBuff("dodge_chance",{})
-		self._holder:AddBuff("crit_chance",{})
-		self._holder:AddBuff("damage_resistance",{})
-		self._holder:AddBuff("fixed_health_regen",{})
-		self._holder:AddBuff("health_regen",{})
-		self._holder:AddBuff("weapon_reload_speed",{})
-		self._holder:AddBuff("weapon_damage_bonus",{})
+function KineticTrackerCore:OnAddUpdaters(hudmgr)
+	hudmgr = hudmgr or managers.hud
+	if not hudmgr then return end
+	self._updator_ready = true
+	if self._animator then
+		hudmgr:add_updator("kinetictracker_update_animate",callback(self._animator,self._animator,"UpdateAnimate"))
 	end
-end
-
-function KineticTrackerCore:InitHolder()
-	self._animator = QuickAnimate:new("kinetictracker_animator",{parent = KineticTrackerCore,updater_type = QuickAnimate.updater_types.HUDManager,paused = false})
-
-	self._ws = self._ws or managers.gui_data:create_fullscreen_workspace()
-	self._holder = KineticTrackerHolder:new(self)
-	
-	self:AddGeneralBuffs()
-end
-
-function KineticTrackerCore:GetBuffIdFromProperty(name)
-	return self.tweak_data.buff_id_lookups.property[name]
-end
-
-function KineticTrackerCore:GetBuffIdFromTemporaryProperty(name)
-	return self.tweak_data.buff_id_lookups.temporary_property[name]
-end
-
-function KineticTrackerCore:GetBuffIdFromTemporaryUpgrade(category,upgrade)
-	return self.tweak_data.buff_id_lookups.temporary_upgrade[category] and self.tweak_data.buff_id_lookups.temporary_upgrade[category][upgrade]
-end
-
-function KineticTrackerCore:GetBuffIdFromCooldownUpgrade(category,upgrade)
-	return self.tweak_data.buff_id_lookups.cooldown_upgrade[category] and self.tweak_data.buff_id_lookups.cooldown_upgrade[category][upgrade]
+	if self._holder then
+		hudmgr:add_updator("kinetictracker_update_holder",callback(self._holder,self._holder,"Update"))
+	end
 end
 
 --aced/basic/cooldown text is applied later, on MenuManagerSetupCustomMenus
@@ -1914,7 +1773,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				trigger_happy = "trigger_happy",
 				desperado = "desperado",
 				copr_risen = "leech",
-				copr_risen_cooldown_added = "leech_cooldown"
+				copr_risen_cooldown_added = "leech_cooldown",
+				primary_reload_secondary_kills = "copycat_primarykills", -- stack counter
+				secondary_reload_primary_kills = "copycat_secondarykills" -- stack counter
 			},
 			temporary_property = {
 				revive_damage_reduction = "painkillers", --needs testing
@@ -1953,14 +1814,16 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 		buffs = {
 	--[[
 			example_skill = {
-				disabled = false,
-				text_id = "", --the localized name of this buff, as it appears in the menu and in the game
+				disabled = false, -- if true, this buff will not be displayed; useful for properties that I want to acknowledge (not log) but not display (eg if they're trivial or irrelevant)
+				text_id = "", --the localization id for this buff; this will be used to generate the label for in-game, and the menu if not otherwise specified
 				icon_data = {
 					source = "skill", --skill, perk, or hud_icon
 					skill_id = "sadfasdf", --skill name, or hud_icon name
 					tree = 1 --skilltree (to sort in menu options)
 				},
-				display_format = ""
+				get_display_string = function(buff,value,timer) -- buff_value is this table (whose key is "example_skill"); value may be any type, timer may be float or nil (depending on what's passed to the buff)
+					
+				end
 			},
 			example_perk = {
 				disabled = false,
@@ -1969,8 +1832,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					source = "perk",
 					tree = 1,
 					card = 1
-				},
-				display_format = ""
+				}
 			},
 			
 			
@@ -1996,9 +1858,15 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					card = 1
 				},
 				is_aced = false,
-				is_basic = false,
 				is_cooldown = false,
-				display_format = "%0.2f"
+				get_timer_display_string = function(t)
+					
+				end,
+				get_display_string = function(buff,value)
+					--local format_str = KineticTrackerCore.settings.buffs.timer_minutes_display
+					local format_str = "%0.2f"
+					return string.format(format_str,value*10)
+				end
 			},
 			winters_present = {
 				disabled = false,
@@ -2022,6 +1890,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				source = "general",
 				text_id = "menu_kitr_buff_damage_absorption_title",
 				desc_id = "menu_kitr_buff_damage_absorption_desc",
+				
+				get_display_string = function(buff,n)
+					local format_str = KineticTrackerCore.settings.buffs.timer_minutes_display
+					return string.format(format_str,n*10)
+				end,
+				
 				upd_func = function(t,dt,values,display_setting,buff_data)
 					return managers.player:damage_absorption()
 				end,
@@ -3596,6 +3470,26 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				is_basic = false,
 				is_cooldown = true,
 				display_format = ""
+			},
+			copycat_primarykills = {
+				disabled = false,
+				source = "perk",
+				text_id = "menu_deck23_1",
+				icon_data = {
+					source = "perk",
+					tree = 23,
+					card = 1
+				}
+			},
+			copycat_secondarykills = {
+				disabled = false,
+				source = "perk",
+				text_id = "menu_deck23_1",
+				icon_data = {
+					source = "perk",
+					tree = 23,
+					card = 1
+				}
 			}
 		}
 	}
@@ -3606,18 +3500,6 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 	end
 	
 	Hooks:Call("KineticTrackers_OnBuffDataLoaded",self.tweak_data)
-end
-
-function KineticTrackerCore:AddBuff(...)
-	if self._holder then 
-		self._holder:AddBuff(...)
-	end
-end
-
-function KineticTrackerCore:RemoveBuff(...)
-	if self._holder then 
-		self._holder:RemoveBuff(...)
-	end
 end
 
 --*************************************************--
@@ -3724,12 +3606,58 @@ end
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 --************************************************--
 		--hud animate functions
 --************************************************--
 
 	-- hud animation manager --
-	
+
+
+
+
+KineticTrackerCore:InitBuffTweakData()
+
+--[[ deprecated
+
 function KineticTrackerCore:animate(object,func,done_cb,...)
 	return self._animator:animate(object,func,done_cb,...)
 end
@@ -3742,7 +3670,179 @@ function KineticTrackerCore:is_animating(object,...)
 	return self._animator:is_animating(object,...)
 end
 
+function KineticTrackerCore:AddBuff(...)
+	if self._holder then 
+		self._holder:AddBuff(...)
+	end
+end
+
+function KineticTrackerCore:RemoveBuff(...)
+	if self._holder then 
+		self._holder:RemoveBuff(...)
+	end
+end
+
+function KineticTrackerCore:GetBuffDisplaySettings(id)
+	
+	local buff_options = {
+		absorption = {
+			disabled = false,
+			color = Color.white,
+			timer_enabled = false,
+			value_threshold = 0
+		},
+		dodge_chance = {
+			disabled = false,
+			color = Color.white,
+			timer_enabled = false,
+			value_threshold = 0
+		},
+		crit_chance = {
+			disabled = false,
+			color = Color.white,
+			timer_enabled = false,
+			value_threshold = 0
+		},
+		damage_resistance = {
+			disabled = false,
+			color = Color.white,
+			timer_enabled = false,
+			value_threshold = 0
+		},
+		fixed_health_regen = {
+			disabled = false,
+			color = Color.white,
+			timer_enabled = false,
+			value_threshold = 0
+		},
+		health_regen = {
+			disabled = false,
+			color = Color.white,
+			timer_enabled = false,
+			value_threshold = 0
+		},
+		weapon_reload_speed = {
+			disabled = true,
+			color = Color.white,
+			timer_enabled = false,
+			value_threshold = 1
+		},
+		weapon_damage_bonus = {
+			disabled = false,
+			color = Color.white,
+			timer_enabled = false,
+			value_threshold = 1
+		},
+		
+		running_from_death_basic_swap_speed = {
+			disabled = true,
+			color = Color.white,
+			timer_enabled = true,
+			value_threshold = 0
+		},
+		running_from_death_aced = {
+			disabled = true,
+			color = Color.white,
+			timer_enabled = true,
+			value_threshold = 0
+		},
+		combat_medic_steelsight_mul = {
+			disabled = true,
+			color = Color.white,
+			timer_enabled = true,
+			value_threshold = 0
+		},
+		combat_medic_damage_mul = {
+			disabled = true,
+			color = Color.white,
+			timer_enabled = true,
+			value_threshold = 0
+		}
+		
+		
+	}
+	
+	
+	local default = {
+		value_threshold = false,
+		timer_enabled = true,
+		color = Color.white
+	} 
+	return self.settings.buffs[id] or buff_options[id] or default
+end
+
+function KineticTrackerCore:GetHUDPosition()
+	return self.settings.x,self.settings.y
+end
+
+function KineticTrackerCore:GetHUDVAlign()
+	return self.settings.valign
+end
+
+function KineticTrackerCore:GetHUDHAlign()
+	return self.settings.halign
+end
+
+function KineticTrackerCore:GetHUDVDirection()
+	return self.settings.vdir
+end
+
+function KineticTrackerCore:GetHUDHDirection()
+	return self.settings.hdir
+end
+
+function KineticTrackerCore:GetHUDWidth()
+	return self.settings.w
+end
+
+function KineticTrackerCore:GetHUDHeight()
+	return self.settings.h
+end
+
+
+function KineticTrackerCore.concat_tbl_with_keys(a,pairsep,setsep,...)
+	local s = ""
+	if type(a) == "table" then 
+		pairsep = pairsep or " = "
+		setsetp = setsetp or ", "
+		for k,v in pairs(a) do 
+			if s ~= "" then 
+				s = s .. setsetp
+			end
+			s = s .. tostring(k) .. pairsep .. tostring(v)
+		end
+	else
+		return AdvancedCrosshair.concat_tbl(a,sep,sep2,...)
+	end
+	return s
+end
+
+
+function KineticTrackerCore:AddGeneralBuffs()
+	-- [ [
+	if self._holder then 
+		self._holder:AddBuff("absorption",{})
+		self._holder:AddBuff("dodge_chance",{})
+		self._holder:AddBuff("crit_chance",{})
+		self._holder:AddBuff("damage_resistance",{})
+		self._holder:AddBuff("fixed_health_regen",{})
+		self._holder:AddBuff("health_regen",{})
+		self._holder:AddBuff("weapon_reload_speed",{})
+		self._holder:AddBuff("weapon_damage_bonus",{})
+	end
+	-- ] ]
+end
+--]]
 
 
 
-KineticTrackerCore:InitBuffTweakData()
+
+
+
+
+
+
+
+
+
+--]]
