@@ -70,7 +70,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 			local desc = buff_data.desc_id or "menu_kitr_buff_entry_generic_desc"
 			local area_bg = "full"
 			local back_callback_name = nil
-			local focus_changed_callback = nil
+			local focus_changed_callback_name = nil
 			local menu_position = nil
 			local subposition = nil
 			
@@ -80,7 +80,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 				desc = desc,
 				area_bg = area_bg,
 				back_callback_name = back_callback_name,
-				focus_changed_callback = focus_changed_callback,
+				focus_changed_callback_name = focus_changed_callback_name,
 				menu_position = menu_position,
 				subposition = subposition
 			}
@@ -298,7 +298,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
 							local item_value = tonumber(item:value())
-							KineticTrackerCore.settings.buff[buff_name][var_name] = item_value
+							KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
 						end
 						
@@ -325,7 +325,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
 							local item_value = tonumber(item:value())
-							KineticTrackerCore.settings.buff[buff_name][var_name] = item_value
+							KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
 						end
 						
@@ -352,7 +352,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
 							local item_value = tonumber(item:value())
-							KineticTrackerCore.settings.buff[buff_name][var_name] = item_value
+							KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
 						end
 						
