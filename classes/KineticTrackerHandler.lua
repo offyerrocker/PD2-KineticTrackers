@@ -40,7 +40,9 @@ function KineticTrackerHandler:GetBuffIdFromCooldownUpgrade(category,upgrade)
 	return self._tweakdata.buff_id_lookups.cooldown_upgrade[category] and self._tweakdata.buff_id_lookups.cooldown_upgrade[category][upgrade]
 end
 
-
+function KineticTrackerHandler:GetBuffIdFromAssaultBuff(name) -- was used for winters/hudassault buff but not anymore
+	return self._tweakdata.buff_id_lookups.assault[name]
+end
 
 
 -- there's no getter for temp property time in vanilla
@@ -55,12 +57,6 @@ function KineticTrackerHandler.get_temporary_property_time(pm,prop,default)
 
 	return default
 end
-
---[[ use pm:get_activate_temporary_expire_time()
-function KineticTrackerHandler.get_temporary_upgrade_time(pm,category,upgrade)
-	return self._temporary_upgrades[category] and self._temporary_upgrades[category][upgrade] and self._temporary_upgrades[category][upgrade].expire_time
-end
---]]
 
 -- Property events
 
