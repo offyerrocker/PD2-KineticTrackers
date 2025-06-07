@@ -1119,7 +1119,7 @@ KineticTrackerCore.default_settings = {
 			timer_flashing_speed = 1,
 			color = "ffffff"
 		},
-		pocket_ecm = {
+		pocket_ecm_feedback = {
 			enabled = true,
 			value_threshold = 0,
 			timer_enabled = true,
@@ -1824,13 +1824,15 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					skill_id = "sadfasdf", --skill name, or hud_icon name
 					tree = 1 --skilltree (to sort in menu options)
 				},
-				get_display_string = function(buff,value,timer) -- buff_value is this table (whose key is "example_skill"); value may be any type, timer may be float or nil (depending on what's passed to the buff)
-					
+				
+				get_display_string = function(buff,value) -- buff_value is this table (whose key is "example_skill"); value may be any type, timer may be float or nil (depending on what's passed to the buff)
+					return tostring(value)
 				end
 			},
 			example_perk = {
 				disabled = false,
 				text_id = "",
+				source = "perk",
 				icon_data = {
 					source = "perk",
 					tree = 1,
@@ -1861,17 +1863,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					card = 1
 				},
 				is_aced = false,
-				is_cooldown = false,
-				get_timer_display_string = function(t)
-					
-				end,
-				get_display_string = function(buff,value)
-					--local format_str = KineticTrackerCore.settings.buffs.timer_minutes_display
-					local format_str = "%0.2f"
-					return string.format(format_str,value*10)
-				end
+				is_cooldown = false
 			},
-			winters_present = {
+			winters_resistance = {
 				disabled = false,
 				source = "general",
 				text_id = "menu_kitr_buff_winters_present_title",
@@ -1884,7 +1878,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				is_aced = false,
 				is_basic = false,
 				is_cooldown = false,
-				display_format = "%i%%"
+				get_display_string = function(buff,value)
+					return string.format("%i%%") --> eg 1%
+				end
 			},
 			
 			
@@ -1893,18 +1889,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				source = "general",
 				text_id = "menu_kitr_buff_damage_absorption_title",
 				desc_id = "menu_kitr_buff_damage_absorption_desc",
-				
-				get_display_string = function(buff,n)
-					local format_str = KineticTrackerCore.settings.buffs.timer_minutes_display
-					return string.format(format_str,n*10)
-				end,
-				
-				upd_func = function(t,dt,values,display_setting,buff_data)
+				upd_func = function(buff,t,dt)
 					return managers.player:damage_absorption()
 				end,
-				modify_timer_func = nil,
-				modify_value_func = function(n)
-					return n * 10
+				get_display_string = function(buff,value)
+					return string.format("%i",value*10)
 				end,
 				icon_data = {
 					source = "perk",
@@ -1913,23 +1902,23 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "%0.1f"
+				is_cooldown = false
 			},
 			dodge_chance = { --(general dodge chance)
 				disabled = false,
 				source = "general",
-	--			text_id = "menu_jail_diet_beta",
 				text_id = "menu_kitr_buff_dodge_chance_title",
 				desc_id = "menu_kitr_buff_dodge_chance_desc",
-				upd_func = function(t,dt,values,display_setting,buff_data)
+				upd_func = function(buff_data,t,dt)
 					local pm = managers.player
 					local player = pm:local_player()
-					local movement_ext = player:movement()
-					return pm:skill_dodge_chance(movement_ext:running(), movement_ext:crouching(), movement_ext:zipline_unit())
+					if player then
+						local movement_ext = player:movement()
+						return pm:skill_dodge_chance(movement_ext:running(), movement_ext:crouching(), movement_ext:zipline_unit())
+					end
 				end,
-				modify_value_func = function(n)
-					return n * 100
+				get_display_string = function(buff,value)
+					return string.format("%0.2f%%",value*100)
 				end,
 				icon_data = {
 					source = "skill",
@@ -1938,8 +1927,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "%i%%"
+				is_cooldown = false
 			},
 			crit_chance = { --(general crit chance)
 				disabled = false,
@@ -1947,15 +1935,13 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				text_id = "menu_kitr_buff_crit_chance_title",
 				desc_id = "menu_kitr_buff_crit_chance_desc",
 				upd_func = function(t,dt,values,display_setting,buff_data)
-					local pm = managers.player
-					
 					local detection_risk = math.round(managers.blackmarket:get_suspicion_offset_from_custom_data({
 						armors = managers.blackmarket:equipped_armor(true,true)
 					}, tweak_data.player.SUSPICION_OFFSET_LERP or 0.75) * 100)
-					return pm:critical_hit_chance(detection_risk)
+					return managers.player:critical_hit_chance(detection_risk)
 				end,
-				modify_value_func = function(n)
-					return n * 100
+				get_display_string = function(buff,value)
+					return string.format("%0.2f%%",value*100)
 				end,
 				icon_data = {
 					source = "skill",
@@ -1964,8 +1950,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "%i%%"
+				is_cooldown = false
 			},
 			damage_resistance = { --general damage resist
 				disabled = false,
@@ -1975,8 +1960,8 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				upd_func = function(t,dt,values,display_setting,buff_data)
 					return (1 - managers.player:damage_reduction_skill_multiplier())
 				end,
-				modify_value_func = function(n)
-					return n * 100
+				get_display_string = function(buff,value)
+					return string.format("%i%%",value*100)
 				end,
 				icon_data = {
 					source = "skill",
@@ -1984,8 +1969,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "%i%%"
+				is_cooldown = false
 			},
 			fixed_health_regen = { --general health regen (heal +specific amount)
 				disabled = false,
@@ -1993,14 +1977,17 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				text_id = "menu_kitr_buff_fixed_health_regen_title",
 				desc_id = "menu_kitr_buff_fixed_health_regen_desc",
 				show_timer = true,
+				--[[
 				upd_func = function(t,dt,values,display_setting,buff_data)
 					local pm = managers.player
 					local player = pm:local_player()
-					local dmg_ext = player:character_damage()
-					return pm:fixed_health_regen()
+					if player then
+						local dmg_ext = player:character_damage()
+						return pm:fixed_health_regen()
+					end
 				end,
-				format_values_func = function(values,buff_display_setting)
-					--
+				get_display_string = function(buff,value)
+					return string.format("+%i%%",value*100)
 				end,
 				modify_timer_func = function(timer)
 					local pm = managers.player
@@ -2008,17 +1995,14 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					local dmg_ext = player:character_damage()
 					return dmg_ext._health_regen_update_timer or 0 
 				end,
-				modify_value_func = function(n)
-					return n * 100
-				end,
+				--]]
 				icon_data = {
 					source = "hud_icon",
 					skill_id = "csb_health" --temp
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "+%i%%"
+				is_cooldown = false
 			},
 			health_regen = { --general fixed health regen (heal % of max health)
 				disabled = false,
@@ -2026,6 +2010,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				text_id = "menu_kitr_buff_health_regen_title",
 				desc_id = "menu_kitr_buff_health_regen_desc",
 				show_timer = true,
+				--[[
 				upd_func = function(t,dt,values,display_setting,buff_data)
 					local pm = managers.player
 					local player = pm:local_player()
@@ -2033,15 +2018,16 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					local time_left = dmg_ext._health_regen_update_timer or 0
 					values[1] = pm:health_regen()
 				end,
+				get_display_string = function(buff,value)
+					return string.format("+%0.2f",value*100)
+				end,
 				modify_timer_func = function()
 					local pm = managers.player
 					local player = pm:local_player()
 					local dmg_ext = player:character_damage()
 					return dmg_ext._health_regen_update_timer or 0 
 				end,
-				modify_value_func = function(n)
-					return n * 10
-				end,
+				--]]
 				icon_data = {
 					source = "perk",
 					tree = 2,
@@ -2049,8 +2035,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "+%0.2f"
+				is_cooldown = false
 			},
 			
 			--todo weapon buffs
@@ -2060,6 +2045,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				text_id = "menu_kitr_buff_weapon_reload_speed_multiplier_title",
 				desc_id = "menu_kitr_buff_weapon_reload_speed_multiplier_desc",
 				show_timer = false,
+				--[[
 				upd_func = function(t,dt,values,display_setting,buff_data)
 					local player = managers.player:local_player()
 					local inv_ext = player:inventory()
@@ -2069,17 +2055,17 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 						values[1] = base and base:reload_speed_multiplier() or values[1]
 					end
 				end,
-				modify_value_func = function(n)
-					return n * 100
+				get_display_string = function(buff,value)
+					return string.format("%0.2f%%",value*100)
 				end,
+				--]]
 				icon_data = {
 					source = "hud_icon",
 					skill_id = "equipment_stapler"
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "%0.2f%%"
+				is_cooldown = false
 			},
 			weapon_damage_bonus = {
 				disabled = false,
@@ -2087,6 +2073,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				text_id = "menu_kitr_buff_weapon_damage_multiplier_title",
 				desc_id = "menu_kitr_buff_weapon_damage_multiplier_desc",
 				show_timer = false,
+				--[[
 				upd_func = function(t,dt,values,display_setting,buff_data)
 					local player = managers.player:local_player()
 					local inv_ext = player:inventory()
@@ -2099,14 +2086,17 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				modify_value_func = function(n)
 					return (n - 1) * 100
 				end,
+				--]]
+				get_display_string = function(buff,value)
+					return string.format("+%0.2f%%",value*100)
+				end,
 				icon_data = {
 					source = "hud_icon",
 					skill_id = "equipment_stapler"
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "+%0.2f%%"
+				is_cooldown = false
 			},
 			weapon_accuracy_bonus = {
 				disabled = true,
@@ -2114,11 +2104,13 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				text_id = "menu_kitr_buff_weapon_accuracy_multiplier_title",
 				desc_id = "menu_kitr_buff_weapon_accuracy_multiplier_desc",
 				show_timer = false,
+				--[[
 				upd_func = function(t,dt,values,display_setting,buff_data)
 					values[1] = managers.player:get_accuracy_multiplier()
 				end,
-				modify_value_func = function(n)
-					return n * 100
+				--]]
+				get_display_string = function(buff,value)
+					return string.format("%0.2f%%",value*100)
 				end,
 				icon_data = {
 					source = "hud_icon",
@@ -2126,8 +2118,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "%0.2f%%"
+				is_cooldown = false
 			},
 			melee_damage_bonus = { --this basically just checks the bloodthirst melee damage bonus
 				disabled = true,
@@ -2135,11 +2126,13 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				text_id = "menu_kitr_buff_melee_damage_multiplier_title",
 				desc_id = "menu_kitr_buff_melee_damage_multiplier_desc",
 				show_timer = false,
+				--[[
 				upd_func = function(t,dt,values,display_setting,buff_data)
 					values[1] = managers.player:get_melee_dmg_multiplier()
 				end,
-				modify_value_func = function(n)
-					return n * 100
+				--]]
+				get_display_string = function(buff,value)
+					return string.format("%0.2f%%",value*100)
 				end,
 				icon_data = {
 					source = "hud_icon",
@@ -2147,8 +2140,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "%0.2f%%"
+				is_cooldown = false
 			},
 			
 			
@@ -2156,6 +2148,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				disabled = true,
 				source = "general",
 				text_id = "menu_ecm_2x_beta",
+				--[[
 				upd_func = function(t,dt,values,display_setting,buff_data)
 					local threshold = display_setting.value_threshold
 					local groupaistate = managers.groupai:state()
@@ -2169,6 +2162,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					end
 	--				values[1] = "example"
 				end,
+				--]]
 				icon_data = {
 					source = "skill",
 					skill_id = "ecm_2x",
@@ -2176,8 +2170,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = ""
+				is_cooldown = false
 			},
 			ecm_feedback = { --(ecm feedback timer) 
 				disabled = true,
@@ -2190,12 +2183,11 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = ""
+				is_cooldown = false
 			},
 		
 		
-		
+	--mastermind
 			combat_medic = { --combat medic (damage reduction during/after res)
 				disabled = false,
 				show_timer = true,
@@ -2207,13 +2199,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					skill_id = "combat_medic",
 					tree = 1
 				},
-				modify_value_func = function(n)
-					return (1 - n) * 100
+				get_display_string = function(buff,value)
+					return string.format("%i%%",(1-value)*100)
 				end,
 				is_aced = false,
 				is_basic = true,
-				is_cooldown = false,
-				display_format = "%i%%"
+				is_cooldown = false
 			},
 			combat_medic_damage_mul = {
 				disabled = true, --actually disabled
@@ -2225,10 +2216,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					skill_id = "combat_medic",
 					tree = 1
 				},
+				get_display_string = function(buff,value)
+					return string.format("%0.2f",value)
+				end,
 				is_aced = false,
 				is_basic = true,
-				is_cooldown = false,
-				display_format = "%0.2f"
+				is_cooldown = false
 			},
 			combat_medic_steelsight_mul = {
 				disabled = true, --actually disabled
@@ -2240,10 +2233,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					skill_id = "combat_medic",
 					tree = 1
 				},
+				get_display_string = function(buff,value)
+					return string.format("%0.2f",value)
+				end,
 				is_aced = false,
 				is_basic = true,
-				is_cooldown = false,
-				display_format = "%0.2f"
+				is_cooldown = false
 			},
 			quick_fix = { --quick fix (damage reduction after using health kit)
 				disabled = false,
@@ -2255,13 +2250,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					skill_id = "tea_time",
 					tree = 1
 				},
+				get_display_string = function(buff,value)
+					return string.format("%0.2f%%",(1-value)*100)
+				end,
 				is_aced = true,
 				is_basic = false,
-				is_cooldown = false,
-				modify_value_func = function(n)
-					return (1 - n) * 100
-				end,
-				display_format = "%0.2f%%"
+				is_cooldown = false
 			},
 			painkillers = { --painkillers (damage reduction for teammates you revive)
 				disabled = false, --needs testing
@@ -2273,10 +2267,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					skill_id = "fast_learner",
 					tree = 1
 				},
+				get_display_string = function(buff,value)
+					return string.format("%0.2f%%",value)
+				end,
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "%0.2f%%"
+				is_cooldown = false
 			},
 			inspire_basic = { --inspire basic (move speed + reload speed bonus for teammates you shout at);
 				disabled = false, --not implemented; requires hooking to player movement ext
@@ -2288,10 +2284,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					skill_id = "inspire",
 					tree = 1
 				},
+				get_display_string = function(buff,value)
+					return string.format("%0.2f",value)
+				end,
 				is_aced = false,
 				is_basic = true,
 				is_cooldown = false,
-				display_format = "%0.2f"
 			},
 			inspire_basic_cooldown = {
 				disabled = false, --not implemented; requires checking var :rally_skill_data().morale_boost_delay_t in player movement ext
@@ -2305,10 +2303,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = false,
 				is_basic = true,
-				is_cooldown = true,
-				display_format = ""
+				is_cooldown = true
 			},
-			inspire_aced_cooldown = {
+			inspire_aced_cooldown = { --value is 1, which is evidently meaningless, so don't bother showing it, just the timer
 				disabled = false,
 				show_timer = true,
 				source = "skill",
@@ -2321,8 +2318,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				},
 				is_aced = true,
 				is_basic = false,
-				is_cooldown = true,
-				display_format = "" --value is 1, which is evidently meaningless, so don't bother showing it
+				is_cooldown = true
 			},
 			forced_friendship = { --forced friendship (nearby civs give damage absorption)
 				disabled = false, --not implemented
@@ -2333,10 +2329,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					skill_id = "triathlete",
 					tree = 1
 				},
+				get_display_string = function(buff,value)
+					return string.format("%0.2f",value)
+				end,
 				is_aced = true,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "%0.2f"
+				is_cooldown = false
 			},
 			partners_in_crime = { --partners in crime (extra max health while you have a convert)
 				disabled = true, --not implemented
@@ -2347,10 +2345,12 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 					skill_id = "control_freak",
 					tree = 1
 				},
+				get_display_string = function(buff,value)
+					return string.format("+%0.2f%%",value)
+				end,
 				is_aced = true,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = "+%0.2f%%"
+				is_cooldown = false
 			},
 			stockholm_syndrome = { --stockholm syndrome aced (hostages autotrade for your return)
 				disabled = true, --not implemented
@@ -3417,19 +3417,35 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				display_format = ""
 			},
 		--hacker
-			pocket_ecm = { --pocket ecm throwable
-				disabled = false, --not implemented; requires tagteam playeraction
+			pocket_ecm_jammer = { --pocket ecm throwable (jammer mode)
+				disabled = false,
 				source = "perk",
-				text_id = "menu_deck21_1",
+				text_id = "kitr_buff_hacker_pecm_jammer_title",
 				icon_data = {
 					source = "perk",
 					tree = 21,
 					card = 1
 				},
+				get_display_string = nil,
 				is_aced = false,
 				is_basic = false,
-				is_cooldown = false,
-				display_format = ""
+				is_cooldown = false
+			},
+			pocket_ecm_feedback = { --pocket ecm throwable (feedback mode)
+				disabled = false,
+				source = "perk",
+				text_id = "kitr_buff_hacker_pecm_feedback_title",
+				icon_data = {
+					source = "perk",
+					tree = 21,
+					card = 1
+				},
+				get_display_string = function(buff,value)
+					return string.format("x%i",value)
+				end,
+				is_aced = false,
+				is_basic = false,
+				is_cooldown = false
 			},
 			kluge = { --kluge (dodge on kill while feedback active)
 				disabled = false, --not implemented
@@ -3477,7 +3493,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			copycat_primarykills = {
 				disabled = false,
 				source = "perk",
-				text_id = "menu_deck23_1",
+				text_id = "kitr_buff_copycat_primarykills_title",
 				icon_data = {
 					source = "perk",
 					tree = 23,
@@ -3487,7 +3503,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 			copycat_secondarykills = {
 				disabled = false,
 				source = "perk",
-				text_id = "menu_deck23_1",
+				text_id = "kitr_buff_copycat_secondarykills_title",
 				icon_data = {
 					source = "perk",
 					tree = 23,
