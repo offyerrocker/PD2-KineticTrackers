@@ -1809,6 +1809,9 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				cooldown = {
 					long_dis_revive = "inspire_aced_cooldown"
 				}
+			},
+			assault = { -- not used
+				vip = "winters_resistance"
 			}
 		},
 		buffs = {
