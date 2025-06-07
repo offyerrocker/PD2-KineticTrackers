@@ -192,7 +192,7 @@ end
 -- for some reason this is called directly from the temporarypropertymanager and not through the playermanager wrapper
 function KineticTrackerHandler:on_enemy_killed_bloodthirst(pm,equipped_unit,variant,killed_unit)	
 	--local data = pm:upgrade_value("player", "melee_kill_increase_reload_speed", 0)
-	local temp_prop = self._temporary_properties._properties.bloodthirst_reload_speed
+	local temp_prop = pm._temporary_properties._properties.bloodthirst_reload_speed
 	if temp_prop then
 		self:on_activate_temporary_property(pm,"bloodthirst_reload_speed",temp_prop[2],temp_prop[1])
 	end
@@ -283,8 +283,8 @@ end
 
 -- should be posthooked to the coroutine
 function KineticTrackerHandler:on_messiah_event(pm)
-	if self._messiah_charges > 0 and self._current_state == "bleed_out" and not self._coroutine_mgr:is_running("get_up_messiah") then
-		self._holder:AddBuff("messiah_ready")
+	if pm._messiah_charges > 0 and pm._current_state == "bleed_out" and not pm._coroutine_mgr:is_running("get_up_messiah") then
+		pm._holder:AddBuff("messiah_ready",{value=true})
 	end
 end
 
