@@ -393,7 +393,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 									color = Color(KineticTrackerCore.settings.buffs[buff_name].color),
 									done_callback = function(color,palettes,success)
 										if success then
-											KineticTrackerCore.settings.buffs[buff_name].color = Colorpicker.color_to_hex(color)
+											KineticTrackerCore.settings.buffs[buff_name].color = ColorPicker.color_to_hex(color)
 											
 											KineticTrackerCore:SetPaletteCodes(palettes)
 										end
