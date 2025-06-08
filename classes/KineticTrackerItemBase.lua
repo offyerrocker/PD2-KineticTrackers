@@ -94,7 +94,7 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 		halign = "grow",
 		texture = texture_data.texture,
 		texture_rect = texture_data.texture_rect,
-		color = color_1,
+		color = icon_color,
 		blend_mode = style.icon_blend_mode,
 		alpha = 1,
 		visible = true,
@@ -113,7 +113,7 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 		vertical = style.name_label_valign,
 		valign = "grow",
 		halign = "grow",
-		color = color_1,
+		color = name_color,
 		blend_mode = style.name_label_blend_mode,
 		alpha = style.name_label_alpha,
 		layer = 2
@@ -131,7 +131,7 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 		vertical = style.primary_label_valign,
 		valign = "grow",
 		halign = "grow",
-		color = color_2,
+		color = primary_color,
 		blend_mode = style.primary_label_blend_mode,
 		alpha = style.primary_label_alpha,
 		layer = 2
@@ -149,7 +149,7 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 		vertical = style.secondary_label_valign,
 		valign = "grow",
 		halign = "grow",
-		color = color_2,
+		color = secondary_color,
 		blend_mode = style.secondary_label_blend_mode,
 		alpha = style.secondary_label_alpha,
 		layer = 2
