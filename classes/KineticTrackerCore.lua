@@ -1753,15 +1753,12 @@ function KineticTrackerCore:Setup(_managers)
 	self._animator = QuickAnimate:new("kinetictracker_animator",{parent = self,updater_type = QuickAnimate.updater_types.none,paused = false})
 end
 
-function KineticTrackerCore:OnAddUpdaters(hudmgr)
-	hudmgr = hudmgr or managers.hud
-	if not hudmgr then return end
-	self._updator_ready = true
+function KineticTrackerCore:OnAddUpdaters()
 	if self._animator then
-		hudmgr:add_updator("kinetictracker_update_animate",callback(self._animator,self._animator,"UpdateAnimate"))
+		self:AddUpdater("kinetictracker_update_animate",callback(self._animator,self._animator,"UpdateAnimate"),true,false,false)
 	end
 	if self._holder then
-		hudmgr:add_updator("kinetictracker_update_holder",callback(self._holder,self._holder,"Update"))
+		self:AddUpdater("kinetictracker_update_holder",callback(self._holder,self._holder,"Update"),true,false,false)
 	end
 end
 
@@ -3677,7 +3674,8 @@ function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
 		
 		local duration = preview_data.end_t
 		if duration then
-			self:AddUpdater(buff_id,function(t,dt)
+			item._updater_id = "kinetictracker_updater_buff_preview_" .. buff_id
+			self:AddUpdater(updater_id,function(t,dt)
 				if alive(item._panel) then
 					duration = duration - dt
 					if duration < 0 then
@@ -3693,9 +3691,10 @@ function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
 end
 
 function KineticTrackerCore:RemoveBuffPreview(buff_id)
-	self:RemoveUpdater(buff_id)
-	if self._preview_buffs[buff_id] then
-		self._preview_buffs[buff_id]:destroy()
+	local item = self._preview_buffs[buff_id]
+	if item then
+		self:RemoveUpdater(item._updater_id)
+		item:destroy()
 		self._preview_buffs[buff_id] = nil
 	end
 end
@@ -3751,28 +3750,26 @@ function KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
 end
 
 function KineticTrackerCore:AddUpdater(id,cb,unpaused,paused,menu)
-	local updater_id = "kinetictracker_updater_" .. id
 	if unpaused then
-		Hooks:Add("GameSetupUpdate",updater_id,cb)
+		Hooks:Add("GameSetupUpdate",id,cb)
 	end
 	if paused then
-		Hooks:Add("GameSetupPausedUpdate",updater_id,cb)
+		Hooks:Add("GameSetupPausedUpdate",id,cb)
 	end
 	if menu then
-		Hooks:Add("MenuUpdate",updater_id,cb)
+		Hooks:Add("MenuUpdate",id,cb)
 	end
 end
 
 function KineticTrackerCore:RemoveUpdater(id,unpaused,paused,menu)
-	local updater_id = "kinetictracker_updater_" .. id
 	if unpaused then
-		Hooks:Remove("GameSetupUpdate",updater_id)
+		Hooks:Remove("GameSetupUpdate",id)
 	end
 	if paused then
-		Hooks:Remove("GameSetupPausedUpdate",updater_id)
+		Hooks:Remove("GameSetupPausedUpdate",id)
 	end
 	if menu then
-		Hooks:Remove("MenuUpdate",updater_id)
+		Hooks:Remove("MenuUpdate",id)
 	end
 end
 
