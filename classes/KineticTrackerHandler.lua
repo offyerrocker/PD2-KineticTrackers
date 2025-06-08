@@ -181,7 +181,8 @@ end
 -- Pocket ECM Jammer events
 
 function KineticTrackerHandler:on_start_pocket_ecm_jammer(inv_ext,end_time)
-	local peer = managers.network:session():peer_by_unit(inv_ext._unit)
+	local session = managers.network:session()
+	local peer = session and session:peer_by_unit(inv_ext._unit)
 	local peer_id = peer and peer:id() or 1
 	
 	--if not peer_id then
@@ -202,7 +203,8 @@ function KineticTrackerHandler:on_start_pocket_ecm_jammer(inv_ext,end_time)
 end
 
 function KineticTrackerHandler:on_stop_pocket_ecm_jammer(inv_ext)
-	local peer = managers.network:session():peer_by_unit(inv_ext._unit)
+	local session = managers.network:session()
+	local peer = session and session:peer_by_unit(inv_ext._unit)
 	local peer_id = peer and peer:id() or 1
 	
 	--if not peer_id then
@@ -214,7 +216,8 @@ function KineticTrackerHandler:on_stop_pocket_ecm_jammer(inv_ext)
 end
 
 function KineticTrackerHandler:on_start_pocket_ecm_feedback(inv_ext,end_time)
-	local peer = managers.network:session():peer_by_unit(inv_ext._unit)
+	local session = managers.network:session()
+	local peer = session and session:peer_by_unit(inv_ext._unit)
 	local peer_id = peer and peer:id() or 1
 	
 	--if not peer_id then
@@ -242,7 +245,8 @@ function KineticTrackerHandler:on_start_pocket_ecm_feedback(inv_ext,end_time)
 end
 
 function KineticTrackerHandler:on_stop_pocket_ecm_feedback(inv_ext)
-	local peer = managers.network:session():peer_by_unit(inv_ext._unit)
+	local session = managers.network:session()
+	local peer = session and session:peer_by_unit(inv_ext._unit)
 	local peer_id = peer and peer:id() or 1
 	
 	--if not peer_id then
@@ -254,7 +258,8 @@ function KineticTrackerHandler:on_stop_pocket_ecm_feedback(inv_ext)
 end
 
 function KineticTrackerHandler:on_pocket_ecm_feedback_tick(inv_ext)
-	local peer = managers.network:session():peer_by_unit(inv_ext._unit)
+	local session = managers.network:session()
+	local peer = session and session:peer_by_unit(inv_ext._unit)
 	local peer_id = peer and peer:id() or 1
 	
 	--if not peer_id then
