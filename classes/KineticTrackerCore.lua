@@ -3670,7 +3670,7 @@ function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
 	item._panel:set_position(_G.foo1 or 500,_G.foo2 or 200)
 	
 	if buff_tweakdata.show_timer then
-		local format_time_func = self._holder.get_format_time_func(settings.timer_precision_places,settings.timer_precision_threshold)
+		local format_time_func = self._holder.get_format_time_func(buff_display_setting,settings)
 		
 		local duration = preview_data.end_t
 		if duration then

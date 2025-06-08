@@ -64,7 +64,7 @@ function KineticTrackerHolder:AddBuff(id,params,skip_sort,peer_id)
 		return
 	end
 	
-	self._format_timer_funcs[id] = self._format_timer_funcs[id] or self.get_format_time_func(self._settings.timer_precision_places,self._settings.timer_precision_threshold)
+	self._format_timer_funcs[id] = self._format_timer_funcs[id] or self.get_format_time_func(self._settings.buffs[id],self._settings)
 	
 	table.insert(self._buffs,priority,new_buff)
 	
@@ -125,8 +125,12 @@ function KineticTrackerHolder:_AddBuff(id,params,skip_sort,peer_id)
 	end
 	
 	local value_str = ""
-	if buff_tweakdata.get_display_string and params.value then
-		value_str = buff_tweakdata.get_display_string(buff_tweakdata,params.value)
+	if buff_tweakdata.show_value and params.value then
+		if buff_tweakdata.get_display_string then
+			value_str = buff_tweakdata.get_display_string(buff_tweakdata,params.value)
+		else
+			value_str = tostring(params.value)
+		end
 	end
 	
 	local gui_item = self._gui_class:new(id,{
@@ -170,7 +174,12 @@ function KineticTrackerHolder:_AddBuff(id,params,skip_sort,peer_id)
 	return new_buff,priority
 end
 
-function KineticTrackerHolder.get_format_time_func(precision,precision_threshold) -- buff_id
+function KineticTrackerHolder.get_format_time_func(buff_settings,global_settings)
+	
+	
+	
+	
+	local precision,precision_threshold
 --	local td = self.tweak_data.buffs[buff_id]
 --	local setting = self.settings[buff_id]
 --	if not setting then return end
@@ -465,8 +474,8 @@ function KineticTrackerHolder:Update(t,dt)
 						-- feed visual progress
 						buff.gui_item:set_progress(time_rem / buff.total_t)
 					end
-					
-					buff.gui_item:set_secondary_text(self._format_timer_funcs[buff.id](time_rem))
+					local time_format_func = self._format_timer_funcs[buff.id] or self.get_format_time_func(self._settings.buffs[buff.id],self._settings)
+					buff.gui_item:set_secondary_text(time_format_func(time_rem))
 				end
 			end
 		end
