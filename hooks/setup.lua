@@ -1,5 +1,5 @@
 --core:import("CoreSetup")
 Hooks:PostHook(Setup,"init_managers","setup_initmanagers_kinetictrackers",function(managers)
-	log("KITR Setup")
+	--log("KITR Setup")
 	--_G.KineticTrackerCore:Setup()
 end)

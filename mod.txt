@@ -14,11 +14,11 @@
 			"script_path" : "hooks/menumanager.lua"
 		},
 		{
-			"hook_id" : "lib/setups/gamesetup",
+			"DISABLEDhook_id" : "lib/setups/gamesetup",
 			"script_path" : "hooks/gamesetup.lua"
 		},
 		{
-			"hook_id" : "lib/setups/setup",
+			"DISABLEDhook_id" : "lib/setups/setup",
 			"script_path" : "hooks/setup.lua"
 		},
 		{
