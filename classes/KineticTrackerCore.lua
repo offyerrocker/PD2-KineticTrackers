@@ -1151,7 +1151,7 @@ KineticTrackerCore.default_settings = {
 		},
 		copycat_primarykills = {
 			enabled = true,
-			value_threshold = 0,
+			value_threshold = 1,
 			timer_enabled = true,
 			timer_precision_places = 2,
 			timer_flashing_mode = 1,
@@ -1161,7 +1161,7 @@ KineticTrackerCore.default_settings = {
 		},
 		copycat_secondarykills = {
 			enabled = true,
-			value_threshold = 0,
+			value_threshold = 1,
 			timer_enabled = true,
 			timer_precision_places = 2,
 			timer_flashing_mode = 1,
@@ -1189,7 +1189,7 @@ KineticTrackerCore.menu_data = {
 			parent = "blt_options",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = nil,
 			subposition = nil
 		},
@@ -1201,7 +1201,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_main",
 			area_bg = "none",
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = nil,
 			subposition = nil
 		},
@@ -1212,7 +1212,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_main",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = nil,
 			subposition = nil
 		},
@@ -1223,7 +1223,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buffs",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = nil,
 			subposition = nil
 		},
@@ -1234,7 +1234,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buffs",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "menu_kitr_buff_category_general",
 			subposition = "after"
 		},
@@ -1246,7 +1246,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_skill",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = nil,
 			subposition = nil
 		},
@@ -1257,7 +1257,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_skill",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "skilltree_mastermind",
 			subposition = "after"
 		},
@@ -1268,7 +1268,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_skill",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "skilltree_enforcer",
 			subposition = "after"
 		},
@@ -1279,7 +1279,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_skill",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "skilltree_technician",
 			subposition = "after"
 		},
@@ -1290,7 +1290,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_skill",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "skilltree_ghost",
 			subposition = "after"
 		},
@@ -1301,7 +1301,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buffs",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "menu_kitr_buff_category_skill",
 			subposition = "after"
 		},
@@ -1313,7 +1313,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = nil,
 			subposition = nil
 		},
@@ -1324,7 +1324,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_crew_chief",
 			subposition = "after"
 		},
@@ -1335,7 +1335,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_muscle",
 			subposition = "after"
 		},
@@ -1346,7 +1346,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_armorer",
 			subposition = "after"
 		},
@@ -1357,7 +1357,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_rogue",
 			subposition = "after"
 		}, 
@@ -1369,7 +1369,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_crook",
 			subposition = "after"
 		},
@@ -1380,7 +1380,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_hitman",
 			subposition = "after"
 		},
@@ -1391,7 +1391,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_burglar",
 			subposition = "after"
 		},
@@ -1402,7 +1402,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_infiltrator",
 			subposition = "after"
 		},
@@ -1413,7 +1413,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_sociopath",
 			subposition = "after"
 		},
@@ -1424,7 +1424,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_gambler",
 			subposition = "after"
 		},
@@ -1435,7 +1435,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_grinder",
 			subposition = "after"
 		},
@@ -1446,7 +1446,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_yakuza",
 			subposition = "after"
 		},
@@ -1457,7 +1457,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_ex_president",
 			subposition = "after"
 		},
@@ -1468,7 +1468,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_maniac",
 			subposition = "after"
 		},
@@ -1479,7 +1479,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_anarchist",
 			subposition = "after"
 		},
@@ -1490,7 +1490,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_biker",
 			subposition = "after"
 		},
@@ -1501,7 +1501,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_kingpin",
 			subposition = "after"
 		},
@@ -1512,7 +1512,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_sicario",
 			subposition = "after"
 		},
@@ -1523,7 +1523,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_stoic",
 			subposition = "after"
 		},
@@ -1534,7 +1534,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_tag_team",
 			subposition = "after"
 		},
@@ -1545,7 +1545,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_hacker",
 			subposition = "after"
 		},
@@ -1556,7 +1556,7 @@ KineticTrackerCore.menu_data = {
 			parent = "menu_kitr_buff_category_perk",
 			area_bg = nil,
 			back_callback_name = nil,
-			focus_changed_callback = nil,
+			focus_changed_callback_name = nil,
 			menu_position = "perkdeck_leech",
 			subposition = "after"
 		}
@@ -1597,21 +1597,23 @@ KineticTrackerCore.menu_data = {
 	}
 }
 
---[[
-for i,v in ipairs(tweak_data.skilltree.specializations) do 
-	if v.name_id then 
-		Log(i .. " perk_" .. string.lower(managers.localization:text(v.name_id)))
-	end
-end
---]]
-
-
+KineticTrackerCore._preview_buffs = {}
+KineticTrackerCore.buff_preview_data = {
+	generic = {
+		value = 3,
+		end_t = 10
+	},
+	flashbang = {
+		value = true,
+		end_t = 5
+	}
+}
 
 
 -------------------------------------------------------------
 --*********************    Utils   *********************--
 -------------------------------------------------------------
-
+	
 function KineticTrackerCore:Log(s,...)
 	if self:IsLoggingEnabled() then 
 		if Console then 
@@ -2148,6 +2150,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				disabled = true,
 				source = "general",
 				text_id = "menu_ecm_2x_beta",
+				show_timer = true,
 				--[[
 				upd_func = function(t,dt,values,display_setting,buff_data)
 					local threshold = display_setting.value_threshold
@@ -2176,6 +2179,7 @@ function KineticTrackerCore:InitBuffTweakData(mode)
 				disabled = true,
 				source = "general",
 				text_id = "menu_ecm_booster_beta",
+				show_timer = true,
 				icon_data = {
 					source = "skill",
 					skill_id = "ecm_booster",
@@ -3525,23 +3529,71 @@ end
 		--colorpicker/menu preview callbacks
 --************************************************--
 
-function KineticTrackerCore:GetColorPickerPalettes()
-	return self.settings.palettes
+function KineticTrackerCore:CreatePreviewPanel()
+	if not (self._preview_panel and alive(self._preview_panel)) then
+		local ws = managers.menu_component and managers.menu_component._fullscreen_ws
+		if ws then
+			self._preview_panel = ws:panel():panel({
+				name = "preview_panel",
+				layer = 1000
+			})
+			local preview_text = self._preview_panel:text({
+				name = "preview_text",
+				text = managers.localization:text("menu_kitr_preview_buff_title"),
+				font = tweak_data.hud.medium_font,
+				font_size = tweak_data.hud.medium_font,
+				align = "left",
+				vertical = "top",
+				valign = "grow",
+				halign = "grow",
+				color = Color.white,
+				blend_mode = "normal",
+				x = 550,
+				y = 24,
+				alpha = 1,
+				layer = 2
+			})
+			preview_text:animate(function(o)
+				local t = 0
+				while true do 
+					t = t + coroutine.yield()
+					o:set_alpha((3+math.cos(t * 180))/4)
+				end
+			end)
+			local preview_bg = self._preview_panel:rect({
+				name = "preview_bg",
+				color = Color.black,
+				alpha = 0.66,
+				w = 0,
+				h = 0
+			})
+			local x,y,w,h = preview_text:text_rect()
+			local wmargin = 6
+			local hmargin = 4
+			preview_bg:set_size(w+wmargin+wmargin,h+hmargin+hmargin)
+			preview_bg:set_position(x-wmargin,y-hmargin)
+		end
+	end
+	return self._preview_panel
 end
-function KineticTrackerCore:GetColorPickerDefaultPalettes()
-	return self.default_palettes
+
+function KineticTrackerCore:RemovePreviewPanel()
+	self:RemoveAllBuffPreviews()
+	if self._preview_panel and alive(self._preview_panel) then
+		self._preview_panel:parent():remove(self._preview_panel)
+	end
+	self._preview_panel = nil
 end
 
 function KineticTrackerCore:InitColorPicker()
 	if _G.ColorPicker then 
 		if not self._colorpicker then 
-			local palettes
 			local params = {
 				palettes = self:GetColorPickerPalettes(),
 				done_callback = callback(self,self,"callback_on_colorpicker_confirmed"),
 				changed_callback = callback(self,self,"callback_on_colorpicker_selected")
 			}
-			ColorPicker:new("kinetictracker",params,callback(self,self,"callback_on_colorpicker_created"))
+			self._colorpicker = ColorPicker:new("kinetictrackers",params,callback(self,self,"callback_on_colorpicker_created"))
 		end
 	end
 end
@@ -3565,17 +3617,94 @@ function KineticTrackerCore:callback_on_colorpicker_save_palettes(palettes)
 	self:SaveSettings()
 end
 
-
-function KineticTrackerCore:CreateBuffPreview(buff_id)
-	self:_CreateBuffPreview(self.tweak_data.buffs[buff_id])
+function KineticTrackerCore:callback_on_buffmenu_focus_changed(buff_id,this,focus)
+	if focus then
+		local buff_preview_panel = self:CreatePreviewPanel()
+		if alive(buff_preview_panel) then
+			self:CreateBuffPreview(buff_id,buff_preview_panel)
+		end
+	else
+		self:RemoveBuffPreview(buff_id)
+	end
 end
 
-function KineticTrackerCore:_CreateBuffPreview(buff_data)
-	--todo
+function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
+	local settings = self.settings
+	local buff_tweakdata = self.tweak_data.buffs[buff_id]
+	local buff_display_setting = settings.buffs[buff_id]
+	local icon_data = buff_tweakdata.icon_data
+	
+	local preview_data = self.buff_preview_data[buff_id] or self.buff_preview_data.generic
+	local color = Color(buff_display_setting.color)
+	
+	local texture_data = {}
+	
+	if icon_data.source == "skill" then 
+		texture_data.texture = "guis/textures/pd2/skilltree_2/icons_atlas_2"
+		local skill_icon_size = 80
+		local x,y = unpack(tweak_data.skilltree.skills[icon_data.skill_id].icon_xy)
+		texture_data.texture_rect = {x * skill_icon_size,y * skill_icon_size,skill_icon_size,skill_icon_size}
+	elseif icon_data.source == "perk" then
+		texture_data.texture,texture_data.texture_rect = self._holder.get_specialization_icon_data_by_tier(icon_data.tree,icon_data.card,false)
+	elseif icon_data.source == "hud_icon" then 
+		texture_data.texture,texture_data.texture_rect = tweak_data.hud_icons:get_icon_data(icon_data.skill_id)
+	elseif icon_data.texture then 
+		texture_data.texture,texture_data.texture_rect = icon_data.texture,icon_data.texture_rect
+	end
+	
+	local value_str = ""
+	if buff_tweakdata.get_display_string and preview_data.value then
+		value_str = buff_tweakdata.get_display_string(buff_tweakdata,preview_data.value)
+	end
+	
+	local gui_class = self:require("classes/KineticTrackerItemBase")
+	local params = {
+		name_text = buff_tweakdata.text_id and managers.localization:text(buff_tweakdata.text_id) or "ERROR",
+		primary_text = value_str,
+		secondary_text = "", -- timer text; set in update
+		buff_data = buff_tweakdata,
+		name_color = nil,
+		primary_color = color,
+		secondary_color = color,
+		texture_data = texture_data
+	}
+	
+	local item = gui_class:new(buff_id,params,buff_preview_panel)
+	item._panel:set_position(_G.foo1 or 500,_G.foo2 or 200)
+	
+	if buff_tweakdata.show_timer then
+		local format_time_func = self._holder.get_format_time_func(settings.timer_precision_places,settings.timer_precision_threshold)
+		
+		local duration = preview_data.end_t
+		if duration then
+			self:AddUpdater(buff_id,function(t,dt)
+				if alive(item._panel) then
+					duration = duration - dt
+					if duration < 0 then
+						duration = preview_data.end_t
+					end
+					item:set_secondary_text(format_time_func(duration))
+				end
+			end,true,true,true)
+		end
+	end
+	
+	self._preview_buffs[buff_id] = item
+end
+
+function KineticTrackerCore:RemoveBuffPreview(buff_id)
+	self:RemoveUpdater(buff_id)
+	if self._preview_buffs[buff_id] then
+		self._preview_buffs[buff_id]:destroy()
+		self._preview_buffs[buff_id] = nil
+	end
 end
 
 function KineticTrackerCore:RemoveAllBuffPreviews()
-	--todo
+	for k,item in pairs(self._preview_buffs) do 
+		item:destroy()
+		self._preview_buffs[k] = nil
+	end
 end
 
 function KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
@@ -3608,7 +3737,6 @@ function KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
 				}
 			}
 		,true)
-
 --]]
 	local title = managers.localization:text("menu_kitr_missing_dependency_colorpicker_title")
 	local desc = managers.localization:text("menu_kitr_missing_dependency_colorpicker_desc")
@@ -3622,9 +3750,63 @@ function KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
 	)
 end
 
+function KineticTrackerCore:AddUpdater(id,cb,unpaused,paused,menu)
+	local updater_id = "kinetictracker_updater_" .. id
+	if unpaused then
+		Hooks:Add("GameSetupUpdate",updater_id,cb)
+	end
+	if paused then
+		Hooks:Add("GameSetupPausedUpdate",updater_id,cb)
+	end
+	if menu then
+		Hooks:Add("MenuUpdate",updater_id,cb)
+	end
+end
 
+function KineticTrackerCore:RemoveUpdater(id,unpaused,paused,menu)
+	local updater_id = "kinetictracker_updater_" .. id
+	if unpaused then
+		Hooks:Remove("GameSetupUpdate",updater_id)
+	end
+	if paused then
+		Hooks:Remove("GameSetupPausedUpdate",updater_id)
+	end
+	if menu then
+		Hooks:Remove("MenuUpdate",updater_id)
+	end
+end
 
+function KineticTrackerCore:GetPaletteColors()
+	local result = {}
+	for i,hex in ipairs(self.settings.palettes) do 
+		result[i] = Color(hex)
+	end
+	return result
+end
 
+function KineticTrackerCore:SetPaletteCodes(tbl)
+	if type(tbl) == "table" then 
+		for i,color in ipairs(tbl) do 
+			self.settings.palettes[i] = ColorPicker.color_to_hex(color)
+		end
+	else
+		self:log("Error: SetPaletteCodes(" .. tostring(tbl) .. ") Bad palettes table from ColorPicker callback")
+	end
+end
+
+function KineticTrackerCore:GetColorPickerPalettes()
+	return self.settings.palettes
+end
+function KineticTrackerCore:GetColorPickerDefaultPalettes()
+	return self.default_palettes
+end
+
+function KineticTrackerCore:UpdBuffPreviewColor(color)
+	for buff_id,item in pairs(self._preview_buffs) do
+		item:set_primary_text_color(color)
+		item:set_secondary_text_color(color)
+	end
+end
 
 
 

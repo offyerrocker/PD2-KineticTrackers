@@ -109,6 +109,8 @@
 	"menu_kitr_bottom" : "Bottom",
 	"menu_kitr_center" : "Center",
 	
+	"menu_kitr_preview_buff_title" : "PREVIEW",
+	
 	
 	"menu_kitr_missing_dependency_colorpicker_title" : "Missing Color Picker Dependency"
 	"menu_kitr_missing_dependency_colorpicker_desc" : "You must have Color Picker installed to use this feature. Get it here: https://modwork.shop/29641",

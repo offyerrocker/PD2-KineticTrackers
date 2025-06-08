@@ -81,8 +81,10 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 			local title = buff_data.name_id --or buff_data.text_id
 			local desc = buff_data.desc_id or "menu_kitr_buff_entry_generic_desc"
 			local area_bg = "full"
-			local back_callback_name = nil
-			local focus_changed_callback_name = nil
+			local back_callback_name = "callback_kitr_remove_buff_preview"
+			local focus_changed_callback_name = "callback_kitr_add_buff_preview_" .. tostring(buff_name)
+			MenuCallbackHandler[focus_changed_callback_name] = callback(KineticTrackerCore,KineticTrackerCore,"callback_on_buffmenu_focus_changed",buff_name)
+			
 			local menu_position = nil
 			local subposition = nil
 			
@@ -119,7 +121,7 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 				KineticTrackerCore:Log("ERROR: No parent menu found for buff " .. tostring(buff_name) .. " with source " .. tostring(source) ..  " during MenuManagerSetupCustomMenus 1")
 				break
 			end
-			
+						
 			menu_data.parent = parent_menu_id
 		end
 	end
@@ -171,10 +173,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 					MenuCallbackHandler[callback_name] = function(self,item)
 						local item_value = item:value() == "on"
 						KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
-						if buff_data.upd_func then 
-							KineticTrackerCore:AddBuff(buff_name,{enabled=item_value})
-						end
-						
+						--managers.kinetictrackers._holder:RemoveBuff(buff_name) -- should hide buff instead of removing it
 						KineticTrackerCore:SaveSettings()
 					end
 					table.insert(submenu_option_items,1,{
@@ -382,37 +381,42 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 							menu_id = parent_menu_id
 						})
 					end
-					
-					do 
-						local var_name = "color"
-						local option_id = menu_id .. "_set_color"
-						local callback_name = "callback_" .. option_id
-						MenuCallbackHandler[callback_name] = function(self,item)
-							if ColorPicker then 
-								if KineticTrackerCore._colorpicker then 
-									ColorPicker:Show({
---										current_color = Color(),
---										done_callback = function() end,
---										changed_callback = function() end
-									})
-								end
-							else
-								KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
+				end
+				
+				do 
+					local option_id = menu_id .. "_set_color"
+					local callback_name = "callback_" .. option_id
+					MenuCallbackHandler[callback_name] = function(self,item)
+						if ColorPicker then 
+							if KineticTrackerCore._colorpicker then 
+								KineticTrackerCore._colorpicker:Show({
+									color = Color(KineticTrackerCore.settings.buffs[buff_name].color),
+									done_callback = function(color,palettes,success)
+										if success then
+											KineticTrackerCore.settings.buffs[buff_name].color = Colorpicker.color_to_hex(color)
+											
+											KineticTrackerCore:SetPaletteCodes(palettes)
+										end
+									end,
+									changed_callback = function(color)
+										KineticTrackerCore:UpdBuffPreviewColor(color)
+									end
+								})
 							end
-							KineticTrackerCore:SaveSettings()
+						else
+							KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
 						end
-						
-						table.insert(submenu_option_items,1,{
-							type = "button",
-							id = option_id,
-							title = "menu_kitr_buff_option_generic_button_set_color_title",
-							desc = "menu_kitr_buff_option_generic_button_set_color_desc",
-							callback = callback_name,
-							menu_id = parent_menu_id
-						})
+						KineticTrackerCore:SaveSettings()
 					end
 					
-					
+					table.insert(submenu_option_items,1,{
+						type = "button",
+						id = option_id,
+						title = "menu_kitr_buff_option_generic_button_set_color_title",
+						desc = "menu_kitr_buff_option_generic_button_set_color_desc",
+						callback = callback_name,
+						menu_id = parent_menu_id
+					})
 				end
 				
 				
@@ -620,6 +624,13 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 		show_value = true,
 		menu_id = "menu_kitr_appearance"
 	})
+
+	-- ---------------------------- BUFF PREVIEWS
+	MenuCallbackHandler.callback_kitr_remove_buff_preview = function(self)
+		KineticTrackerCore:RemovePreviewPanel()
+	end
+	
+	
 end)
 
 Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenus_KineticTrackers", function(menu_manager, nodes)
@@ -676,8 +687,6 @@ Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenus_KineticTra
 			create_menu(nil,data)
 		end
 	end
-	
-	
 end)
 
 Hooks:Add( "MenuManagerInitialize", "MenuManagerInitialize_KineticTrackers", function(menu_manager)
@@ -710,5 +719,9 @@ Hooks:Add( "MenuManagerInitialize", "MenuManagerInitialize_KineticTrackers", fun
 		--on menu exit: do nothing in particular
 	end
 	--]]
+		--creates colorpicker menu for AdvancedCrosshair mod; this menu is reused for all color-related callbacks in this mod,
+	--so it's also necessary to also update the callback whenever calling the menu
+	KineticTrackerCore:InitColorPicker()
+	
 	MenuHelper:LoadFromJsonFile(KineticTrackerCore._options_path, KineticTrackerCore, KineticTrackerCore.settings)
 end)
