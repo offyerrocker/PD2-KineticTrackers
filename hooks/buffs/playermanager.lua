@@ -1,6 +1,17 @@
 Hooks:PostHook(PlayerManager,"check_skills","kt_pm_checkskills",function(self,...)
 	Hooks:Call("PlayerManager_OnCheckSkills",self,...)
 	KineticTrackerCore:OnAddUpdaters(managers.hud)
+	-- only copycat uses these but for some reason the property for these is added unconditionally
+	-- so they always show up on the kt hud even if you don't have the buff
+	if self._has_primary_reload_swap_secondary or self:has_category_upgrade("weapon", "primary_reload_swap_secondary") then
+	else
+		self:remove_property("primary_reload_secondary_kills")
+	end
+	if self._has_secondary_reload_swap_primary or self:has_category_upgrade("weapon", "secondary_reload_swap_primary") then
+	else
+		self:remove_property("secondary_reload_primary_kills")
+	end
+	
 end)
 	
 Hooks:PostHook(PlayerManager,"set_property","kt_pm_on_set_property",function(self,name,value)
