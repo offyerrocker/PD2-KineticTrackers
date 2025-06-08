@@ -58,9 +58,28 @@ function KineticTrackerHolder:CreatePanel(panel)
 end
 
 function KineticTrackerHolder:AddBuff(id,params,skip_sort,peer_id)
+
+	local new_buff,priority = self:_AddBuff(id,params,skip_sort,peer_id)
+	if not new_buff then
+		return
+	end
+	
+	self._format_timer_funcs[id] = self._format_timer_funcs[id] or self.get_format_time_func(self._settings.timer_precision_places,self._settings.timer_precision_threshold)
+	
+	table.insert(self._buffs,priority,new_buff)
+	
+	if not skip_sort then
+		self:SortBuffs()
+	end
+end
+
+function KineticTrackerHolder:_AddBuff(id,params,skip_sort,peer_id)
 	--Print("KineticTrackerHolder:AddBuff()",id,params.value)
 	
-	if not Utils:IsInHeist() then
+	--if not Utils:IsInHeist() then
+	--	return
+	--end
+	if not alive(self._panel) then
 		return
 	end
 	
@@ -110,35 +129,32 @@ function KineticTrackerHolder:AddBuff(id,params,skip_sort,peer_id)
 		value_str = buff_tweakdata.get_display_string(buff_tweakdata,params.value)
 	end
 	
-	local gui_item
-	if alive(self._panel) then
-		gui_item = self._gui_class:new(id,{
-			name_text = buff_tweakdata.text_id and managers.localization:text(buff_tweakdata.text_id) or "ERROR",
-			primary_text = value_str,
-			secondary_text = "", -- timer text
-			buff_data = buff_tweakdata,
-			texture_data = texture_data
-		},self._panel)
-		
-		local get_xy = self:get_align_callbacks(self._settings.orientation)
-		
-		local panel = gui_item._panel
-		
-		local panel_w,panel_h = self._panel:size()
-		local w,h = panel:size()
-		local num_buffs = #self._buffs+1
-		local x2,y2 = get_xy(num_buffs,num_buffs,w,h,panel_w,panel_h)
-		panel:set_position(x2,y2)
-		-- fadein
-		gui_item._animthread_fade = panel:animate(function(o)
-			over(0.15,function(lerp)
-				local n = math.sin(lerp * 90)
-				o:set_alpha(n * n)
-			end)
-			o:set_alpha(1)
-			gui_item._animthread_fade = nil
+	local gui_item = self._gui_class:new(id,{
+		name_text = buff_tweakdata.text_id and managers.localization:text(buff_tweakdata.text_id) or "ERROR",
+		primary_text = value_str,
+		secondary_text = "", -- timer text
+		buff_data = buff_tweakdata,
+		texture_data = texture_data
+	},self._panel)
+	
+	local get_xy = self:get_align_callbacks(self._settings.orientation)
+	
+	local panel = gui_item._panel
+	
+	local panel_w,panel_h = self._panel:size()
+	local w,h = panel:size()
+	local num_buffs = #self._buffs+1
+	local x2,y2 = get_xy(num_buffs,num_buffs,w,h,panel_w,panel_h)
+	panel:set_position(x2,y2)
+	-- fadein
+	gui_item._animthread_fade = panel:animate(function(o)
+		over(0.15,function(lerp)
+			local n = math.sin(lerp * 90)
+			o:set_alpha(n * n)
 		end)
-	end
+		o:set_alpha(1)
+		gui_item._animthread_fade = nil
+	end)
 	
 	local new_buff = {
 		id = id,
@@ -150,14 +166,8 @@ function KineticTrackerHolder:AddBuff(id,params,skip_sort,peer_id)
 		gui_item = gui_item
 	}
 	
-	table.insert(self._buffs,priority,new_buff)
 	
-	self._format_timer_funcs[id] = self._format_timer_funcs[id] or self.get_format_time_func(settings.timer_precision_places,settings.timer_precision_threshold)
-	
-	if not skip_sort then
-		self:SortBuffs()
-	end
-	
+	return new_buff,priority
 end
 
 function KineticTrackerHolder.get_format_time_func(precision,precision_threshold) -- buff_id
@@ -371,6 +381,7 @@ function KineticTrackerHolder:SortBuffs()
 	end
 end
 
+-- this needs work
 function KineticTrackerHolder:_SetBuff(buff,params,skip_sort)
 	for k,v in pairs(params) do 
 		if type(v) ~= "table" then
@@ -402,7 +413,7 @@ end
 function KineticTrackerHolder:SetBuff(id,params)
 	local buff = self:GetBuff(id)
 	if not buff then
-		return self:AddBuff(id,params)
+		return --self:AddBuff(id,params)
 	end
 	return self:_SetBuff(buff,params)
 end
