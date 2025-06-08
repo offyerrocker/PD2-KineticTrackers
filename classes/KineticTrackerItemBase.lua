@@ -40,6 +40,7 @@ KineticTrackerItemBase.STYLE = {
 	margin_medium = 4
 }
 
+KineticTrackerItemBase.COLOR_PAYDAY_BLUE = Color(63/255,162/255,248/255)
 
 function KineticTrackerItemBase:init(id,params,parent_panel)
 	self._animthread_fade = nil
@@ -50,12 +51,12 @@ end
 
 -- todo delete prev panel; nts id should be concatenation of id and secondary identifier (peer_id) if any
 function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
-	
-	local id = params.id
 	local texture_data = params.texture_data
 	local style = self.STYLE
-	local color_1 = Color.white
-	local color_2 = Color.blue
+	local icon_color = params.icon_color or Color.white
+	local name_color = params.name_color or Color.white
+	local primary_color = params.primary_color or self.COLOR_PAYDAY_BLUE
+	local secondary_color = params.secondary_color or self.COLOR_PAYDAY_BLUE
 	local texture,texture_rect
 	
 	local name_text = params.name_text
@@ -81,6 +82,7 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 		h = style.icon_max_height,
 		layer = nil
 	})
+	icon_frame:set_center_y(panel:h()/2)
 	self._icon_frame = icon_frame
 	local icon = icon_frame:bitmap({
 		name = "icon",
@@ -201,12 +203,12 @@ end
 
 function KineticTrackerItemBase:align_labels()
 	local style = self.STYLE
-	if style.primary_label_align_to_name and string.len(self._name_label:text()) > 0 then
+	if style.primary_label_align_to_name then
 		local x1,y1,w1,h1 = self._name_label:text_rect()
 		self._primary_label:set_x(self._name_label:x() + w1 + style.margin_medium)
 	end
 	
-	if style.secondary_label_align_to_primary and string.len(self._primary_label:text()) > 0 then
+	if style.secondary_label_align_to_primary then
 		local x2,y2,w2,h2 = self._primary_label:text_rect()
 		self._secondary_label:set_x(self._primary_label:x() + w2 + style.margin_medium)
 	end
