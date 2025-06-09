@@ -258,6 +258,28 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						menu_id = parent_menu_id
 					})
 					
+					-- insert inherit global toggle
+					do 
+						local var_name = "timer_inherit_global"
+						local option_id = menu_id .. "_timer_inherit_global"
+						local callback_name = "callback_" .. option_id
+						MenuCallbackHandler[callback_name] = function(self,item)
+							local item_value = item:value() == "on"
+							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
+							KineticTrackerCore:SaveSettings()
+						end
+						table.insert(submenu_option_items,1,{
+							type = "toggle",
+							id = option_id,
+							title = "menu_kitr_buff_option_generic_toggle_inherit_global_timer_settings_title",
+							desc = "menu_kitr_buff_option_generic_toggle_inherit_global_timer_settings_desc",
+							callback = callback_name,
+							value = buff_display_setting[var_name],
+							menu_id = parent_menu_id
+						})
+					end
+					
+					
 					--insert timer format
 					do 
 						local var_name = "timer_minutes_display" 
@@ -286,8 +308,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 
 					--insert timer precision
 					do 
-						local var_name = "timer_precision"
-						local option_id = menu_id .. "_timer_precision"
+						local var_name = "timer_precision_places"
+						local option_id = menu_id .. "_timer_precision_places"
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
 							local item_value = tonumber(item:value())
@@ -298,13 +320,42 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						table.insert(submenu_option_items,1,{
 							type = "multiple_choice",
 							id = option_id,
-							title = "menu_kitr_buff_option_generic_slider_timer_precision_title",
-							desc = "menu_kitr_buff_option_generic_slider_timer_precision_desc",
+							title = "menu_kitr_buff_option_generic_multiplechoice_timer_precision_title",
+							desc = "menu_kitr_buff_option_generic_multiplechoice_timer_precision_desc",
 							callback = callback_name,
 							items = {
 								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_zero", -- 0 (integer only, eg "12") 
 								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_one", -- 1 (eg: 12.3)
 								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_two" -- 2 (eg: 12.34)
+							},
+							value = buff_display_setting[var_name] or 1,
+							menu_id = parent_menu_id
+						})
+					end
+					
+					--insert timer threshold
+					do 
+						local var_name = "timer_precision_threshold"
+						local option_id = menu_id .. "_timer_precision_threshold"
+						local callback_name = "callback_" .. option_id
+						MenuCallbackHandler[callback_name] = function(self,item)
+							local item_value = tonumber(item:value())
+							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
+							KineticTrackerCore:SaveSettings()
+						end
+						
+						table.insert(submenu_option_items,1,{
+							type = "multiple_choice",
+							id = option_id,
+							title = "menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_title",
+							desc = "menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_desc",
+							callback = callback_name,
+							items = {
+								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_never",
+								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_three",
+								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_five",
+								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_ten",
+								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_always"
 							},
 							value = buff_display_setting[var_name] or 1,
 							menu_id = parent_menu_id

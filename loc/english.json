@@ -63,8 +63,16 @@
 	"menu_kitr_buff_option_generic_multiplechoice_timer_display_minutes_title" : "Time Display",
 	"menu_kitr_buff_option_generic_multiplechoice_timer_display_minutes_desc" : "Change how buff timers are displayed",
 	
-	"menu_kitr_buff_option_generic_slider_timer_precision_title" : "Set Timer Minutes/Seconds Display",
-	"menu_kitr_buff_option_generic_slider_timer_precision_desc" : "Change how buff timers are displayed",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_title" : "Timer Precision Threshold",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_desc" : "Choose when to show decimal precision for timers",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_never" : "Never",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_three" : "< 3s",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_five" : "< 5s",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_ten" : "< 10s",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_threshold_always" : "Always",
+	
+	"menu_kitr_buff_option_generic_toggle_inherit_global_timer_settings_title" : "Inherit global settings",
+	"menu_kitr_buff_option_generic_toggle_inherit_global_timer_settings_desc" : "If enabled, the global settings will be used instead of the below settings.",
 	
 	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_title" : "Decimal Precision",
 	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_desc" : "Choose how many decimal places of time to show",

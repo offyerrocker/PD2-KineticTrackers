@@ -256,7 +256,8 @@ KineticTrackerCore.tweak_data = {
 }
 KineticTrackerCore._require_libs = {} -- cached lua chunks from this mod's implementation of require via loadfile, keyed by path
 
-KineticTrackerCore.TIMER_SETTING_PRECISION_LOOKUP = { 0,1,2 }
+KineticTrackerCore.TIMER_SETTING_PRECISION_PLACES_LOOKUP = { 0,1,2 }
+KineticTrackerCore.TIMER_SETTING_PRECISION_THRESHOLD_LOOKUP = { 0,3,5,10,math.huge }
 
 KineticTrackerCore.default_palettes = {
 	"e32727",
@@ -309,7 +310,7 @@ KineticTrackerCore.default_settings = {
 	timer_enabled = true,
 	timer_minutes_display = 1,
 	timer_precision_places = 2,
-	timer_precision_threshold = 5, -- at below 5s, the timer will start showing decimal precision (if timer_precision_places is enabled)
+	timer_precision_threshold = 3, -- (lookup index) under this threshold, the timer will start showing decimal precision (if timer_precision_places is enabled). 1: never, 2: 3s, 3: 5s, 4: 10s, 5: always
 	timer_flashing_mode = 1, -- flash when: 1: under threshold. 2: always. 3: never.
 	timer_flashing_threshold = 3, -- if timer is under this amount and flashing mode is 1, do flash
 	
@@ -3517,8 +3518,8 @@ function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
 	local item = gui_class:new(buff_id,params,buff_preview_panel)
 	item._panel:set_position(500,360)
 	
+	--local format_time_func = self._holder.get_format_time_func(buff_display_setting,settings)
 	if buff_tweakdata.show_timer then
-		local format_time_func = self._holder.get_format_time_func(buff_display_setting,settings)
 		
 		local duration = preview_timer
 		if duration then
@@ -3529,6 +3530,9 @@ function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
 					if duration < 0 then
 						duration = preview_timer
 					end
+					local format_time_func = self._holder.get_format_time_func(buff_display_setting,settings)
+					-- bad practice for perf optimization but easier for updating preview with settings
+					
 					item:set_secondary_text(format_time_func(duration))
 				end
 			end,true,true,true)

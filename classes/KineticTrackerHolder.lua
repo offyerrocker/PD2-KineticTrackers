@@ -194,25 +194,33 @@ end
 
 function KineticTrackerHolder.get_format_time_func(buff_settings,global_settings)
 	
-	local precision,precision_threshold
+	local precision,precision_threshold,show_minutes
 	
 	if buff_settings.timer_inherit_global then
-		precision = KineticTrackerCore.TIMER_SETTING_PRECISION_LOOKUP[global_settings.timer_precision_places or 0] or 0
-		precision_threshold = global_settings.timer_precision_threshold or 0
+		precision = KineticTrackerCore.TIMER_SETTING_PRECISION_PLACES_LOOKUP[global_settings.timer_precision_places or 0] or 0
+		precision_threshold = KineticTrackerCore.TIMER_SETTING_PRECISION_THRESHOLD_LOOKUP[global_settings.timer_precision_threshold or 0] or 0
+		show_minutes = global_settings.timer_minutes_display == 2
 	else
-		precision = KineticTrackerCore.TIMER_SETTING_PRECISION_LOOKUP[buff_settings.timer_precision_places or 0] or 0
-		precision_threshold = buff_settings.timer_precision_threshold or 0
+		precision = KineticTrackerCore.TIMER_SETTING_PRECISION_PLACES_LOOKUP[buff_settings.timer_precision_places or 0] or 0
+		precision_threshold = KineticTrackerCore.TIMER_SETTING_PRECISION_THRESHOLD_LOOKUP[buff_settings.timer_precision_threshold or 0] or 0
+		show_minutes = buff_settings.timer_minutes_display == 2
 	end
 	
 	local _seconds_format = ".%0" .. string.format("%i",precision) .."i"
 	local precision_pow = math.pow(10,precision)
-	local show_minutes = true
+	
+	local SECONDS_ABBREV_STR = "s"
+	local SECONDS_FORMAT_TEMPLATE
+	if show_minutes then
+		SECONDS_FORMAT_TEMPLATE = "%02d"
+	else
+		SECONDS_FORMAT_TEMPLATE = "%d"
+	end
+	local MINUTES_FORMAT = "%01i:"
 	
 	return function(seconds)
 		local str = ""
-		local SECONDS_ABBREV_STR = "s"
-		local seconds_format = "%02d"
-		local minutes_format = "%01i:"
+		local seconds_format = SECONDS_FORMAT_TEMPLATE
 		if precision >= 1 and seconds < precision_threshold then 
 	--		seconds_format = "%02." .. string.format("%i",precision) .. "f"
 			seconds_format = seconds_format .. string.format(_seconds_format,(seconds - math.floor(seconds)) * precision_pow)
@@ -221,7 +229,7 @@ function KineticTrackerHolder.get_format_time_func(buff_settings,global_settings
 		if show_minutes then 
 			local _minutes = math.min(seconds / 60,99)
 			local _seconds = seconds % 60
-			str = string.format(minutes_format .. seconds_format,_minutes,_seconds)
+			str = string.format(MINUTES_FORMAT .. seconds_format,_minutes,_seconds)
 		else
 			str = string.format(seconds_format,seconds) .. SECONDS_ABBREV_STR
 		end
