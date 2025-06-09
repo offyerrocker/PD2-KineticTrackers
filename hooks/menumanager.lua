@@ -282,22 +282,23 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						local option_id = menu_id .. "_timer_precision"
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
-							local item_value = math.round(tonumber(item:value()))
+							local item_value = tonumber(item:value())
 							KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
 						end
 						
 						table.insert(submenu_option_items,1,{
-							type = "slider",
+							type = "multiple_choice",
 							id = option_id,
 							title = "menu_kitr_buff_option_generic_slider_timer_precision_title",
 							desc = "menu_kitr_buff_option_generic_slider_timer_precision_desc",
 							callback = callback_name,
-							value = buff_display_setting[var_name] or 2,
-							min = 0,
-							max = 3,
-							step = 1,
-							show_value = true,
+							items = {
+								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_zero", -- 0 (integer only, eg "12") 
+								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_one", -- 1 (eg: 12.3)
+								"menu_kitr_buff_option_generic_multiplechoice_timer_precision_two" -- 2 (eg: 12.34)
+							},
+							value = buff_display_setting[var_name] or 1,
 							menu_id = parent_menu_id
 						})
 					end
@@ -383,40 +384,42 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 					end
 				end
 				
-				do 
-					local option_id = menu_id .. "_set_color"
-					local callback_name = "callback_" .. option_id
-					MenuCallbackHandler[callback_name] = function(self,item)
-						if ColorPicker then 
-							if KineticTrackerCore._colorpicker then 
-								KineticTrackerCore._colorpicker:Show({
-									color = Color(KineticTrackerCore.settings.buffs[buff_name].color),
-									done_callback = function(color,palettes,success)
-										if success then
-											KineticTrackerCore.settings.buffs[buff_name].color = ColorPicker.color_to_hex(color)
-											
-											KineticTrackerCore:SetPaletteCodes(palettes)
+				if buff_data.show_value or buff_data.show_timer then
+					do 
+						local option_id = menu_id .. "_set_color"
+						local callback_name = "callback_" .. option_id
+						MenuCallbackHandler[callback_name] = function(self,item)
+							if ColorPicker then 
+								if KineticTrackerCore._colorpicker then 
+									KineticTrackerCore._colorpicker:Show({
+										color = Color(KineticTrackerCore.settings.buffs[buff_name].color),
+										done_callback = function(color,palettes,success)
+											if success then
+												KineticTrackerCore.settings.buffs[buff_name].color = ColorPicker.color_to_hex(color)
+												
+												KineticTrackerCore:SetPaletteCodes(palettes)
+											end
+										end,
+										changed_callback = function(color)
+											KineticTrackerCore:UpdBuffPreviewColor(color)
 										end
-									end,
-									changed_callback = function(color)
-										KineticTrackerCore:UpdBuffPreviewColor(color)
-									end
-								})
+									})
+								end
+							else
+								KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
 							end
-						else
-							KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
+							KineticTrackerCore:SaveSettings()
 						end
-						KineticTrackerCore:SaveSettings()
+						
+						table.insert(submenu_option_items,1,{
+							type = "button",
+							id = option_id,
+							title = "menu_kitr_buff_option_generic_button_set_color_title",
+							desc = "menu_kitr_buff_option_generic_button_set_color_desc",
+							callback = callback_name,
+							menu_id = parent_menu_id
+						})
 					end
-					
-					table.insert(submenu_option_items,1,{
-						type = "button",
-						id = option_id,
-						title = "menu_kitr_buff_option_generic_button_set_color_title",
-						desc = "menu_kitr_buff_option_generic_button_set_color_desc",
-						callback = callback_name,
-						menu_id = parent_menu_id
-					})
 				end
 				
 				
