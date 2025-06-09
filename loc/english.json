@@ -124,6 +124,9 @@
 	"kitr_buff_hacker_pecm_jammer_title" : "Pocket ECM Jammer",
 	"kitr_buff_hacker_pecm_feedback_title" : "Pocket ECM Feedback",
 	
+	"kitr_buff_ecm_jammer_title" : "Pocket ECM Jammer",
+	"kitr_buff_ecm_feedback_title" : "Pocket ECM Feedback",
+	
 	"kitr_buff_copycat_primarykills_title" : "Tactical Reload (Primary Kills)",
 	"kitr_buff_copycat_secondarykills_title" : "Tactical Reload (Secondary Kills)"
 	

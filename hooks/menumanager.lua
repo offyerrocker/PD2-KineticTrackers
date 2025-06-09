@@ -13,15 +13,19 @@ end)
 Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTrackers", function(menu_manager, nodes)
 	KineticTrackerCore:Setup()
 	
+	local mode = "vanilla"
 	if _G.deathvox then
 		-- planned
-		KineticTrackerCore:InitBuffTweakData("crackdown")
+		mode = "crackdown"
 	elseif _G.restoration then
 		-- planned
-		KineticTrackerCore:InitBuffTweakData("resmod")
+		mode = "resmod"
 	else
-		KineticTrackerCore:InitBuffTweakData()
+		mode = "vanilla"
 	end
+	KineticTrackerCore:LoadBuffData(mode)
+	--KineticTrackerCore:GenerateBuffSettings(KineticTrackerCore.tweak_data)
+	KineticTrackerCore:LoadBuffSettings(mode)
 	
 	local loc = managers.localization
 	
@@ -60,6 +64,9 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 	for buff_name,buff_data in pairs(KineticTrackerCore.tweak_data.buffs) do 
 		if not buff_data.disabled then 
 			--check for valid settings for this buff
+			-- should no longer be necessary since default settings are generated after tweakdata,
+			-- then user settings for that overhaul mode are loaded after/on top of that
+			--[[
 			local buff_display_setting = KineticTrackerCore.settings.buffs[buff_name] 
 			if buff_display_setting then
 				if not KineticTrackerCore.default_settings.buffs[buff_name] then 
@@ -72,9 +79,10 @@ Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTra
 					end
 				end
 			else
-				KineticTrackerCore.settings.buffs[buff_name] = table.deep_map_copy(KineticTrackerCore.default_settings.buffs[buff_name] or {})
-				buff_display_setting = KineticTrackerCore.settings.buffs[buff_name]
+				--KineticTrackerCore.buff_settings[buff_name] = table.deep_map_copy(KineticTrackerCore.default_settings.buffs[buff_name] or {})
+				buff_display_setting = KineticTrackerCore.buff_settings[buff_name]
 			end
+			--]]
 		
 			local shortname = "buff_" .. tostring(buff_name)
 			local menu_id = "menu_kitr_buff_entry_" .. tostring(buff_name)
@@ -144,7 +152,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 				local menu_id = menu_data.id --template menu id for all options in this buff's submenu
 				local parent_menu_id = menu_id --the parent of this buff's submenu
 				
-				local buff_display_setting = KineticTrackerCore.settings.buffs[buff_name]
+				local buff_display_setting = assert(KineticTrackerCore.buff_settings[buff_name],buff_name .. " does not exist")
 				
 --				local default_buff_options = buff_data.menu_options or {}
 				
@@ -172,7 +180,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 					local callback_name = "callback_" .. option_id
 					MenuCallbackHandler[callback_name] = function(self,item)
 						local item_value = item:value() == "on"
-						KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
+						KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 						--managers.kinetictrackers._holder:RemoveBuff(buff_name) -- should hide buff instead of removing it
 						KineticTrackerCore:SaveSettings()
 					end
@@ -195,7 +203,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 					local callback_name = "callback_" .. option_id
 					MenuCallbackHandler[callback_name] = function(self,item)
 						local item_value = tonumber(item:value())
-						KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
+						KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 						KineticTrackerCore:SaveSettings()
 					end
 					
@@ -229,7 +237,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
 							local item_value = item:value() == "on"
-							KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
+							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
 						end
 						table.insert(submenu_option_items,1,{
@@ -257,7 +265,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
 							local item_value = tonumber(item:value())
-							KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
+							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
 						end
 					
@@ -283,7 +291,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
 							local item_value = tonumber(item:value())
-							KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
+							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
 						end
 						
@@ -310,7 +318,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
 							local item_value = tonumber(item:value())
-							KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
+							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
 						end
 						
@@ -337,7 +345,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
 							local item_value = tonumber(item:value())
-							KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
+							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
 						end
 						
@@ -364,7 +372,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						local callback_name = "callback_" .. option_id
 						MenuCallbackHandler[callback_name] = function(self,item)
 							local item_value = tonumber(item:value())
-							KineticTrackerCore.settings.buffs[buff_name][var_name] = item_value
+							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
 						end
 						
@@ -383,7 +391,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						})
 					end
 				end
-				
+				--[[
 				if buff_data.show_value or buff_data.show_timer then
 					do 
 						local option_id = menu_id .. "_set_color"
@@ -392,10 +400,10 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 							if ColorPicker then 
 								if KineticTrackerCore._colorpicker then 
 									KineticTrackerCore._colorpicker:Show({
-										color = Color(KineticTrackerCore.settings.buffs[buff_name].color),
+										color = Color(KineticTrackerCore.buff_settings[buff_name].color),
 										done_callback = function(color,palettes,success)
 											if success then
-												KineticTrackerCore.settings.buffs[buff_name].color = ColorPicker.color_to_hex(color)
+												KineticTrackerCore.buff_settings[buff_name].color = ColorPicker.color_to_hex(color)
 												
 												KineticTrackerCore:SetPaletteCodes(palettes)
 											end
@@ -421,7 +429,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						})
 					end
 				end
-				
+				--]]
 				
 				for i,submenu_option_data in ipairs(submenu_option_items) do 
 					submenu_option_data.priority = submenu_option_data.priority or i

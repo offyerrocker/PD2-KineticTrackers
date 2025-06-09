@@ -20,7 +20,7 @@
 		
 		per-buff display settings are saved to settings
 		buff_display_setting is an extraneous table generated from per-buff display settings overlaid onto settings
-		this allows "unchanged" values where a player can choose to have global settings (like ACH) which can be overrided on a per-buff basis
+		this allows "unchanged" values where a player can choose to have global settings (like ACH) which can be overridden on a per-buff basis
 		
 	keybind to enter edit mode, a la hunterpie
 		* click+drag/resize buffs window 
@@ -28,7 +28,6 @@
 	
 	add item style option (link Holder's update and Item:new() call to global style setting)
 	add buff name popup per buff on first activation
-	fix minor margin/2 offset display bug for primary_bg rect object
 		use the rotation trick to bypass clipping?
 	add multi-value display (mainly for biker/grinder)
 	add optional border around buffs:
@@ -134,65 +133,6 @@
 			-icon color
 			-bg color
 			-bg alpha
-	
-	
-	
-				MenuHelper:AddMultipleChoice({
-					id = "ach_crosshairs_general_outofrange_mode",
-					title = "menu_ach_crosshairs_general_outofrange_mode_title",
-					desc = "menu_ach_crosshairs_general_outofrange_mode_desc",
-					callback = "callback_ach_crosshairs_general_set_outofrange_mode",
-					items = {
-						"menu_ach_outofrange_disabled",
-						"menu_ach_outofrange_size"
-					},
-					value = AdvancedCrosshair.settings.crosshair_outofrange_mode,
-					menu_id = AdvancedCrosshair.crosshairs_menu_id,
-					priority = 7
-				})
-				
-				MenuHelper:AddButton({
-					id = "id_ach_menu_crosshairs_categories_global_preview_bloom",
-					title = "menu_ach_preview_bloom_title",
-					desc = "menu_ach_preview_bloom_desc",
-					callback = "callback_ach_crosshairs_categories_global_preview_bloom",
-					menu_id = AdvancedCrosshair.crosshairs_categories_global_id,
-					priority = 1
-				})
-				
-				MenuHelper:AddSlider({
-					id = "ach_hitsounds_set_hit_headshot_volume",
-					title = "menu_ach_hitsounds_set_hit_headshot_volume_title",
-					desc = "menu_ach_hitsounds_set_hit_headshot_volume_desc",
-					callback = "callback_ach_hitsounds_set_hit_headshot_volume",
-					value = AdvancedCrosshair.settings.hitsound_hit_headshot_volume,
-					min = 0,
-					max = 1,
-					step = 0.1,
-					show_value = true,
-					menu_id = AdvancedCrosshair.hitsounds_menu_id,
-					priority = 19
-				})
-					
-				
-				MenuHelper:AddDivider({
-					id = "ach_crosshairs_general_divider_1",
-					size = 16,
-					menu_id = AdvancedCrosshair.crosshairs_menu_id,
-					priority = 9
-				})
-				MenuHelper:AddToggle({
-					id = "ach_crosshairs_general_master_enable",
-					title = "menu_ach_crosshairs_general_master_enable_title",
-					desc = "menu_ach_crosshairs_general_master_enable_desc",
-					callback = "callback_ach_crosshairs_general_master_enable",
-					value = AdvancedCrosshair.settings.crosshair_enabled,
-					menu_id = AdvancedCrosshair.crosshairs_menu_id,
-					priority = 8
-				})
-	
-	
-	
 	
 	options:
 		- per-buff enable/disable
@@ -307,9 +247,16 @@ KineticTrackerCore = _G.KineticTrackerCore or {}
 KineticTrackerCore._path = ModPath
 KineticTrackerCore._options_path = ModPath .. "menu/menu_main.json"
 KineticTrackerCore._default_localization_path = ModPath .. "loc/english.json"
-KineticTrackerCore._save_path = SavePath .. "KineticTrackers.json"
-KineticTrackerCore.tweak_data = nil
+KineticTrackerCore._save_path_base = SavePath
+KineticTrackerCore._save_path_general = KineticTrackerCore._save_path_base .. "KineticTrackers_general.json"
+KineticTrackerCore._save_path_buff_template = "KineticTrackers_buffs_$mode.json"
+KineticTrackerCore.tweak_data = {
+	buff_id_lookups = {},
+	buffs = {}
+}
 KineticTrackerCore._require_libs = {} -- cached lua chunks from this mod's implementation of require via loadfile, keyed by path
+
+KineticTrackerCore.TIMER_SETTING_PRECISION_LOOKUP = { 0,1,2 }
 
 KineticTrackerCore.default_palettes = {
 	"e32727",
@@ -344,21 +291,29 @@ KineticTrackerCore.default_palettes = {
 }
 KineticTrackerCore.default_settings = {
 	logs_enabled = true,
-	x = 0,
-	y = 0,
-	w = 1280,
-	h = 720,
+	x = 0, -- buff panel x
+	y = 0, -- buff panel y
+	w = 1280, -- buff panel w
+	h = 720, -- buff panel h
 	orientation = 1, -- int [1-12]; see KineticTrackerHolder for more info
 	
 	buff_style = 1, -- 1: destiny 2 style; 2: warframe style
+	
+	buff_color_value_normal = "ffffff", -- value label color default
+	buff_color_value_full = "ffd700", -- value label color when the value has reached its max
+	buff_color_timer_normal = "ffffff", -- timer label color default
+	buff_color_timer_cooldown = "ff5050", -- timer label color when the buff is a cooldown (or is a negative trait such as winters/flashbang)
+	
+	value_threshold = 0,
 	
 	timer_enabled = true,
 	timer_minutes_display = 1,
 	timer_precision_places = 2,
 	timer_precision_threshold = 5, -- at below 5s, the timer will start showing decimal precision (if timer_precision_places is enabled)
-	timer_flashing_mode = 1,
-	timer_flashing_threshold = 3,
-	timer_flashing_speed = 1,
+	timer_flashing_mode = 1, -- flash when: 1: under threshold. 2: always. 3: never.
+	timer_flashing_threshold = 3, -- if timer is under this amount and flashing mode is 1, do flash
+	
+	timer_flashing_speed = 1, -- global setting only, no individual setting
 	
 	sort_by_priority = false,
 	
@@ -366,822 +321,92 @@ KineticTrackerCore.default_settings = {
 	buffs = {
 		TEMPLATE = {
 			enabled = true,
+			value_inherit_global = false, -- if false, use global settings instead
 			value_threshold = 0,
+			
 			timer_enabled = true,
+			timer_inherit_global = false, -- if true, disregard the buff-specific settings and use the global setting
 			timer_precision_places = 2,
+			timer_precision_threshold = 5,
 			timer_flashing_mode = 1,
 			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		absorption = {
-			enabled = true,
-			value_threshold = 2,
-			color = "ffd700"
-		},
-		winters_present = {
-			enabled = true,
-			value_threshold = 2,
-			color = "ffd700"
-		},
-		flashbang = {
-			enabled = true,
-			value_threshold = 2,
-			color = "ffd700"
-		},
-		dodge_chance = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffd700"
-		},
-		crit_chance = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffd700"
-		},
-		damage_resistance = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffd700"
-		},
-		fixed_health_regen = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffd700"
-		},
-		health_regen = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffd700"
-		},
-		weapon_reload_speed = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffd700"
-		},
-		weapon_damage_bonus = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffd700"
-		},
-		weapon_accuracy_bonus = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffd700"
-		},
-		melee_damage_bonus = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		ecm_jammer = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		ecm_feedback = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		combat_medic = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		combat_medic_steelsight_mul = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		combat_medic_damage_mul = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		quick_fix = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		painkillers = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		inspire_basic = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		inspire_basic_cooldown = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		inspire_aced_cooldown = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		forced_friendship = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		partners_in_crime = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		stockholm_syndrome = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		stable_shot = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		rifleman = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		ammo_efficiency = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		aggressive_reload = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 1,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		underdog_basic = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		underdog_aced = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		far_away = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		close_by = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		overkill = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		die_hard = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		bullseye = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = false,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		scavenger = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		bullet_storm = {
-			enabled = true,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		fully_loaded = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		hardware_expert = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		drill_sawgeant = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		kick_starter = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		fire_control = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		lock_n_load = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		chameleon = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		second_chances = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		dire_chance = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		second_wind = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		second_wind_aced = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		unseen_strike = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		desperado = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		trigger_happy = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		running_from_death_basic_reload_speed = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		running_from_death_basic_swap_speed = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		running_from_death_aced = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		up_you_go = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		swan_song = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		messiah = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		bloodthirst_basic = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		bloodthirst_aced = {
-			enabled = false,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		counterstrike = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		berserker_basic = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		berserker_aced = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		marathon_man = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		hostage_situation = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		meat_shield = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		reinforced_armor = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		reinforced_armor_cooldown = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		elusive = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		tooth_and_claw = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		bag_of_tricks = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		breath_of_fresh_air = {
-			enabled = false,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		overdog = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 1,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		basic_close_combat = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		life_leech = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		tension = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		clean_hit = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		overdose = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		ammo_box_pickup_health = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		ammo_box_pickup_share = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		histamine = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		koi_irezumi = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		hebi_irezumi = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		point_break = {
-			enabled = true,
-			value_threshold = 0,
-			color = "ffffff"
-		},
-		excitement = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		blitzkrieg_bop = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		lust_for_life = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		prospect = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		kingpin_injector = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		sicario_smoke_bomb = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		twitch = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		virtue = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		delayed_damage = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		calm = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 2,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		gas_dispenser = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		pocket_ecm_feedback = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		kluge = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		leech = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		leech_grace = {
-			enabled = true,
-			value_threshold = 0,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		copycat_primarykills = {
-			enabled = true,
-			value_threshold = 1,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
-		},
-		copycat_secondarykills = {
-			enabled = true,
-			value_threshold = 1,
-			timer_enabled = true,
-			timer_precision_places = 2,
-			timer_flashing_mode = 1,
-			timer_flashing_threshold = 3,
-			timer_flashing_speed = 1,
-			color = "ffffff"
+			timer_flashing_speed = 1
 		}
-		
 	}
 }
+
+-- all/global settings
 KineticTrackerCore.settings = table.deep_map_copy(KineticTrackerCore.default_settings)
+
+-- buff-specific settings (may vary by overhaul)
+KineticTrackerCore.default_buff_settings = {}
+KineticTrackerCore.buff_settings = {}
+
+-- since buff behavior can theoretically be entirely different between overhauls
+-- (particularly buffs with the same name but different effects)
+-- this can cause crashing or other unexpected behavior;
+-- therefore, settings (and in turn, settings) should be overhaul/balance specific
+
+function KineticTrackerCore:GenerateBuffSettings(buff_tweakdata)
+	local buff_settings = {}
+	for buff_id,buff_data in pairs(buff_tweakdata.buffs) do 
+		if not buff_data.disabled then
+			local setting = {}
+			buff_settings[buff_id] = setting
+			
+			local menu_defaults = buff_data.menu_options
+			if menu_defaults then
+			
+				setting.enabled = menu_defaults.enabled
+				
+				if buff_data.show_value then 
+					setting.value_threshold = menu_defaults.value_threshold or self.default_settings.value_threshold
+					setting.value_inherit_global = menu_defaults.value_inherit_global
+					setting.buff_color_value_normal = menu_defaults.buff_color_value_normal or self.default_settings.buff_color_value_normal
+					setting.buff_color_value_full = menu_defaults.buff_color_value_full or self.default_settings.buff_color_value_full
+				end
+				
+				if buff_data.show_timer then
+					setting.timer_enabled = menu_defaults.timer_enabled or self.default_settings.timer_enabled
+					setting.timer_inherit_global = (menu_defaults.timer_inherit_global == nil and true) or menu_defaults.timer_inherit_global
+					setting.timer_minutes_display = menu_defaults.timer_minutes_display or self.default_settings.timer_minutes_display
+					setting.timer_precision_places = menu_defaults.timer_precision_places or self.default_settings.timer_precision_places
+					setting.timer_precision_threshold = menu_defaults.timer_precision_threshold or self.default_settings.timer_precision_threshold
+					setting.timer_flashing_mode = menu_defaults.timer_flashing_mode or self.default_settings.timer_flashing_mode
+					setting.timer_flashing_threshold = menu_defaults.timer_flashing_threshold or self.default_settings.timer_flashing_threshold
+					setting.timer_flashing_speed = menu_defaults.timer_flashing_speed or self.default_settings.timer_flashing_speed
+					setting.buff_color_timer_normal = menu_defaults.buff_color_timer_normal or self.default_settings.buff_color_timer_normal
+					setting.buff_color_timer_cooldown = menu_defaults.buff_color_timer_cooldown or self.default_settings.buff_color_timer_cooldown
+				end
+			else
+				setting.enabled = true
+				
+				if buff_data.show_value then 
+					setting.value_threshold = self.default_settings.value_threshold
+					setting.value_inherit_global = true
+					setting.buff_color_value_normal = self.default_settings.buff_color_value_normal
+					setting.buff_color_value_full = self.default_settings.buff_color_value_full
+				end
+				
+				if buff_data.show_timer then
+					setting.timer_enabled = self.default_settings.timer_enabled or false
+					setting.timer_inherit_global = self.default_settings.timer_inherit_global or false
+					setting.timer_minutes_display = self.default_settings.timer_minutes_display
+					setting.timer_precision_places = self.default_settings.timer_precision_places
+					setting.timer_precision_threshold = self.default_settings.timer_precision_threshold
+					setting.timer_flashing_mode = self.default_settings.timer_flashing_mode
+					setting.timer_flashing_threshold = self.default_settings.timer_flashing_threshold
+					setting.timer_flashing_speed = self.default_settings.timer_flashing_speed
+					setting.buff_color_timer_normal = self.default_settings.buff_color_timer_normal
+					setting.buff_color_timer_cooldown = self.default_settings.buff_color_timer_cooldown
+				end
+			end
+			
+		end
+	end
+	return buff_settings
+end
+
 
 
 -------------------------------------------------------------
@@ -1701,7 +926,7 @@ end
 -------------------------------------------------------------
 
 function KineticTrackerCore:SaveSettings()
-	local file = io.open(self._save_path,"w+")
+	local file = io.open(self._save_path_general,"w+")
 	if file then
 		file:write(json.encode(self.settings))
 		file:close()
@@ -1709,8 +934,8 @@ function KineticTrackerCore:SaveSettings()
 end
 
 function KineticTrackerCore:LoadSettings()
-	local file = io.open(self._save_path, "r")
-	if (file) then
+	local file = io.open(self._save_path_general, "r")
+	if file then
 		for k, v in pairs(json.decode(file:read("*all"))) do
 			self.settings[k] = v
 		end
@@ -1719,6 +944,26 @@ function KineticTrackerCore:LoadSettings()
 	end
 end
 
+function KineticTrackerCore:SaveBuffSettings(mode)
+	local save_path = self._save_path_base .. string.gsub(KineticTrackerCore._save_path_buff_template,"$mode",mode)
+	local file = io.open(save_path,"w+")
+	if file then
+		file:write(json.encode(self.buff_settings))
+		file:close()
+	end
+end
+
+function KineticTrackerCore:LoadBuffSettings(mode)
+	local save_path = self._save_path_base .. string.gsub(KineticTrackerCore._save_path_buff_template,"$mode",mode)
+	local file = io.open(save_path, "r")
+	if file then
+		for k, v in pairs(json.decode(file:read("*all"))) do
+			self.buff_settings[k] = v
+		end
+	else
+		self:SaveBuffSettings(mode)
+	end
+end
 
 function KineticTrackerCore:ResetSettings(category,skip_save)
 	if not category then 
@@ -1752,7 +997,7 @@ function KineticTrackerCore:Setup(_managers)
 	_managers = _managers or _G.managers
 	
 	local KineticTrackerHolder = self:require("classes/KineticTrackerHolder")
-	local holder = KineticTrackerHolder:new(self.settings,self.tweak_data)
+	local holder = KineticTrackerHolder:new(self.settings,self.buff_settings,self.tweak_data)
 	self._holder = holder
 	
 	local KineticTrackerHandler = self:require("classes/KineticTrackerHandler")
@@ -1772,1995 +1017,2338 @@ function KineticTrackerCore:OnAddUpdaters()
 end
 
 --aced/basic/cooldown text is applied later, on MenuManagerSetupCustomMenus
-function KineticTrackerCore:InitBuffTweakData(mode)
-	self.tweak_data = {
-		buff_id_lookups = {
-			property = {
-				revive_damage_reduction = "combat_medic", --while reviving other player
-				shock_and_awe_reload_multiplier = "lock_n_load",
-				trigger_happy = "trigger_happy",
-				desperado = "desperado",
-				copr_risen = "leech",
-				copr_risen_cooldown_added = "leech_cooldown",
-				primary_reload_secondary_kills = "copycat_primarykills", -- stack counter
-				secondary_reload_primary_kills = "copycat_secondarykills" -- stack counter
-			},
-			temporary_property = {
-				revive_damage_reduction = "painkillers", --needs testing
-				bloodthirst_reload_speed = "bloodthirst_aced"
-			},
-			temporary_upgrade = {
-				temporary = {
-					revive_damage_reduction = "combat_medic", --on revive other player
-					single_shot_fast_reload = "aggressive_reload",
-					overkill_damage_multiplier = "overkill",
-					dmg_multiplier_outnumbered = "underdog_basic",
-					dmg_dampener_outnumbered = "underdog_aced",
-					dmg_dampener_outnumbered_strong = "overdog",
-					dmg_dampener_close_contact = "basic_close_combat", --crew chief marathon man/infiltrator basic close combat/sociopath clean hit
-					loose_ammo_restore_health = "ammo_box_pickup_health",
-					loose_ammo_give_team = "ammo_box_pickup_share",
-					damage_speed_multiplier = "second_wind",
-					combat_medic_enter_steelsight_speed_multiplier = "combat_medic_steelsight_mul", --hidden steelsight speed bonus after reviving a teammate
-					combat_medic_damage_multiplier = "combat_medic_damage_mul", --hidden damage bonus after reviving a teammate
-					first_aid_damage_reduction = "quick_fix",
-					revived_damage_resist = "up_you_go",
-					increased_movement_speed = "running_from_death_aced",
-					swap_weapon_faster = "running_from_death_basic_swap_speed",
-					reload_weapon_faster = "running_from_death_basic_reload_speed",
-					berserker_damage_multiplier = "swan_song",
-					team_damage_speed_multiplier_received = "second_wind_aced", --second wind aced (from team)
-					unseen_strike = "unseen_strike"
+function KineticTrackerCore:LoadBuffData(mode)
+	local td
+	if mode == "crackdown" then 
+		td = {}
+	elseif mode == "resmod" then
+		td = {}
+	else
+		td = {
+			buff_id_lookups = {
+				property = {
+					revive_damage_reduction = "combat_medic", --while reviving other player
+					shock_and_awe_reload_multiplier = "lock_n_load",
+					trigger_happy = "trigger_happy",
+					desperado = "desperado",
+					copr_risen = "leech",
+					copr_risen_cooldown_added = "leech_cooldown",
+					primary_reload_secondary_kills = "copycat_primarykills", -- stack counter
+					secondary_reload_primary_kills = "copycat_secondarykills" -- stack counter
+				},
+				temporary_property = {
+					revive_damage_reduction = "painkillers", --needs testing
+					bloodthirst_reload_speed = "bloodthirst_aced"
+				},
+				temporary_upgrade = {
+					temporary = {
+						revive_damage_reduction = "combat_medic", --on revive other player
+						single_shot_fast_reload = "aggressive_reload",
+						overkill_damage_multiplier = "overkill",
+						dmg_multiplier_outnumbered = "underdog_basic",
+						dmg_dampener_outnumbered = "underdog_aced",
+						dmg_dampener_outnumbered_strong = "overdog",
+						dmg_dampener_close_contact = "basic_close_combat", --crew chief marathon man/infiltrator basic close combat/sociopath clean hit
+						loose_ammo_restore_health = "ammo_box_pickup_health",
+						loose_ammo_give_team = "ammo_box_pickup_share",
+						damage_speed_multiplier = "second_wind",
+						combat_medic_enter_steelsight_speed_multiplier = "combat_medic_steelsight_mul", --hidden steelsight speed bonus after reviving a teammate
+						combat_medic_damage_multiplier = "combat_medic_damage_mul", --hidden damage bonus after reviving a teammate
+						first_aid_damage_reduction = "quick_fix",
+						revived_damage_resist = "up_you_go",
+						increased_movement_speed = "running_from_death_aced",
+						swap_weapon_faster = "running_from_death_basic_swap_speed",
+						reload_weapon_faster = "running_from_death_basic_reload_speed",
+						berserker_damage_multiplier = "swan_song",
+						team_damage_speed_multiplier_received = "second_wind_aced", --second wind aced (from team)
+						unseen_strike = "unseen_strike"
+					}
+				},
+				cooldown_upgrade = {
+					cooldown = {
+						long_dis_revive = "inspire_aced_cooldown"
+					}
+				},
+				assault = { -- not used
+					vip = "winters_resistance"
 				}
 			},
-			cooldown_upgrade = {
-				cooldown = {
-					long_dis_revive = "inspire_aced_cooldown"
-				}
-			},
-			assault = { -- not used
-				vip = "winters_resistance"
-			}
-		},
-		buffs = {
-	--[[
-			example_skill = {
-				disabled = false, -- if true, this buff will not be displayed; useful for properties that I want to acknowledge (not log) but not display (eg if they're trivial or irrelevant)
-				text_id = "", --the localization id for this buff; this will be used to generate the label for in-game, and the menu if not otherwise specified
-				icon_data = {
-					source = "skill", --skill, perk, or hud_icon
-					skill_id = "sadfasdf", --skill name, or hud_icon name
-					tree = 1 --skilltree (to sort in menu options)
+			buffs = {
+		--[[
+				example_skill = {
+					disabled = false, -- if true, this buff will not be displayed; useful for properties that I want to acknowledge (not log) but not display (eg if they're trivial or irrelevant)
+					text_id = "", --the localization id for this buff; this will be used to generate the label for in-game, and the menu if not otherwise specified
+					name_id = "", -- if specified, this overrides the text_id
+					icon_data = {
+						source = "skill", --skill, perk, or hud_icon
+						skill_id = "sadfasdf", --skill name, or hud_icon name
+						tree = 1 --skilltree (to sort in menu options)
+					},
+					
+					get_display_string = function(buff,value) -- buff_value is this table (whose key is "example_skill"); value may be any type, timer may be float or nil (depending on what's passed to the buff)
+						return tostring(value)
+					end,
+					
+					default_settings = { -- this is only used for setting generation
+					-- this section is only used if show_timer is true
+						enabled = true,
+						value_threshold = 0,
+						buff_color_value_normal = "ffffff", -- default value color
+						buff_color_value_full = "ffd700", -- value color if value is above "max" threshold
+						buff_color_timer_normal = "ffffff", -- default timer color
+						buff_color_timer_cooldown = "ff4040", -- timer color if buff is a "cooldown" type
+						timer_enabled = true, -- bool
+						timer_minutes_display = 1, -- 1: minutes, 2: seconds
+						timer_precision_places = 1, -- 1: integer. 2: 1 decimal place. 3: 2 decimal places
+						timer_flashing_mode = 1, -- flash when: 1: under threshold. 2: always. 3: never.
+						timer_flashing_threshold = 5 -- if timer is under this amount and flashing mode is 1, do flash
+					}
+					-- 
+				},
+				example_perk = {
+					disabled = false,
+					text_id = "",
+					source = "perk",
+					icon_data = {
+						source = "perk",
+						tree = 1,
+						card = 1
+					}
 				},
 				
-				get_display_string = function(buff,value) -- buff_value is this table (whose key is "example_skill"); value may be any type, timer may be float or nil (depending on what's passed to the buff)
-					return tostring(value)
-				end
-			},
-			example_perk = {
-				disabled = false,
-				text_id = "",
-				source = "perk",
-				icon_data = {
-					source = "perk",
-					tree = 1,
-					card = 1
-				}
-			},
-			
-			
-			
-			
-				menu_options = {
-					min_value = 0, --used for sliders
-					max_value = 10, --used for sliders
-					step = 1, --used for sliders
-					default_value = 1, --used for all menu option types
+				
+				
+				
+					menu_options = {
+						min_value = 0, --used for sliders
+						max_value = 10, --used for sliders
+						step = 1, --used for sliders
+						default_value = 1, --used for all menu option types
+					},
+		--]]
+				--misc "fake" statuses
+				flashbang = {
+					disabled = false,
+					show_timer = true,
+					show_value = false,
+					source = "general",
+					text_id = "menu_kitr_buff_flashbanged_title",
+					name_id = nil, --overrides generated name_id
+					desc_id = "menu_kitr_buff_flashbanged_desc",
+					icon_data = {
+						source = "perk",
+						tree = 1,
+						card = 1
+					},
+					is_aced = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true,
+						timer_inherit_global = false,
+						timer_precision_places = 2,
+						timer_flashing_mode = 2
+					},
+					preview = {
+						value = 1, -- placeholder
+						timer = 5
+					}
 				},
-	--]]
-			--misc "fake" statuses
-			flashbang = {
-				disabled = false,
-				source = "general",
-				text_id = "menu_kitr_buff_flashbanged_title",
-				name_id = nil, --overrides generated name_id
-				desc_id = "menu_kitr_buff_flashbanged_desc",
-				icon_data = {
-					source = "perk",
-					tree = 1,
-					card = 1
+				winters_resistance = {
+					disabled = false,
+					show_timer = false,
+					show_value = true,
+					source = "general",
+					text_id = "menu_kitr_buff_winters_present_title",
+					desc_id = "menu_kitr_buff_winters_present_desc",
+					icon_data = {
+						source = "perk",
+						tree = 1,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					get_display_string = function(buff,value)
+						return string.format("%i%%") --> eg 1%
+					end,
+					menu_options = {
+						enabled = true,
+						value_inherit_global = true,
+						buff_color_value_normal = "ff7777",
+						buff_color_value_full = "ff5050"
+					},
+					preview = {
+						value = 1
+					}
 				},
-				is_aced = false,
-				is_cooldown = false
-			},
-			winters_resistance = {
-				disabled = false,
-				source = "general",
-				text_id = "menu_kitr_buff_winters_present_title",
-				desc_id = "menu_kitr_buff_winters_present_desc",
-				icon_data = {
-					source = "perk",
-					tree = 1,
-					card = 1
+				absorption = { --(general absorption)
+					disabled = false,
+					show_timer = false,
+					show_value = true,
+					source = "general",
+					text_id = "menu_kitr_buff_damage_absorption_title",
+					desc_id = "menu_kitr_buff_damage_absorption_desc",
+					show_timer = false,
+					show_value = true,
+					upd_func = function(buff,t,dt)
+						return managers.player:damage_absorption()
+					end,
+					get_display_string = function(buff,value)
+						return string.format("%i",value*10)
+					end,
+					icon_data = {
+						source = "perk",
+						tree = 14,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true,
+						value_inherit_global = false,
+						buff_color_value_normal = "76d2e2",
+						buff_color_value_full = "3cd2ed"
+					},
+					preview = {
+						value = 100
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false,
-				get_display_string = function(buff,value)
-					return string.format("%i%%") --> eg 1%
-				end
-			},
-			
-			
-			absorption = { --(general absorption)
-				disabled = false,
-				source = "general",
-				text_id = "menu_kitr_buff_damage_absorption_title",
-				desc_id = "menu_kitr_buff_damage_absorption_desc",
-				show_timer = false,
-				show_value = true,
-				upd_func = function(buff,t,dt)
-					return managers.player:damage_absorption()
-				end,
-				get_display_string = function(buff,value)
-					return string.format("%i",value*10)
-				end,
-				icon_data = {
-					source = "perk",
-					tree = 14,
-					card = 1
+				dodge_chance = { --(general dodge chance)
+					disabled = false,
+					source = "general",
+					text_id = "menu_kitr_buff_dodge_chance_title",
+					desc_id = "menu_kitr_buff_dodge_chance_desc",
+					show_timer = false,
+					show_value = true,
+					upd_func = function(buff_data,t,dt)
+						local pm = managers.player
+						local player = pm:local_player()
+						if player then
+							local movement_ext = player:movement()
+							return pm:skill_dodge_chance(movement_ext:running(), movement_ext:crouching(), movement_ext:zipline_unit())
+						end
+					end,
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value*100)
+					end,
+					icon_data = {
+						source = "skill",
+						skill_id = "jail_diet",
+						tree = 4
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true,
+						value_inherit_global = false,
+						buff_color_value_normal = "76d2e2",
+						buff_color_value_full = "3cd2ed"
+					},
+					preview = {
+						value = 0.4
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			dodge_chance = { --(general dodge chance)
-				disabled = false,
-				source = "general",
-				text_id = "menu_kitr_buff_dodge_chance_title",
-				desc_id = "menu_kitr_buff_dodge_chance_desc",
-				show_timer = false,
-				show_value = true,
-				upd_func = function(buff_data,t,dt)
-					local pm = managers.player
-					local player = pm:local_player()
-					if player then
-						local movement_ext = player:movement()
-						return pm:skill_dodge_chance(movement_ext:running(), movement_ext:crouching(), movement_ext:zipline_unit())
-					end
-				end,
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value*100)
-				end,
-				icon_data = {
-					source = "skill",
-					skill_id = "jail_diet",
-					tree = 4
+				crit_chance = { --(general crit chance)
+					disabled = false,
+					source = "general",
+					text_id = "menu_kitr_buff_crit_chance_title",
+					desc_id = "menu_kitr_buff_crit_chance_desc",
+					show_timer = false,
+					show_value = true,
+					upd_func = function(t,dt,values,display_setting,buff_data)
+						local detection_risk = math.round(managers.blackmarket:get_suspicion_offset_from_custom_data({
+							armors = managers.blackmarket:equipped_armor(true,true)
+						}, tweak_data.player.SUSPICION_OFFSET_LERP or 0.75) * 100)
+						return managers.player:critical_hit_chance(detection_risk)
+					end,
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value*100)
+					end,
+					icon_data = {
+						source = "skill",
+						skill_id = "backstab",
+						tree = 4
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					},
+					preview = {
+						value = 0.4
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			crit_chance = { --(general crit chance)
-				disabled = false,
-				source = "general",
-				text_id = "menu_kitr_buff_crit_chance_title",
-				desc_id = "menu_kitr_buff_crit_chance_desc",
-				show_timer = false,
-				show_value = true,
-				upd_func = function(t,dt,values,display_setting,buff_data)
-					local detection_risk = math.round(managers.blackmarket:get_suspicion_offset_from_custom_data({
-						armors = managers.blackmarket:equipped_armor(true,true)
-					}, tweak_data.player.SUSPICION_OFFSET_LERP or 0.75) * 100)
-					return managers.player:critical_hit_chance(detection_risk)
-				end,
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value*100)
-				end,
-				icon_data = {
-					source = "skill",
-					skill_id = "backstab",
-					tree = 4
+				damage_resistance = { --general damage resist
+					disabled = false,
+					source = "general",
+					text_id = "menu_kitr_buff_damage_resistance_title",
+					desc_id = "menu_kitr_buff_damage_resistance_desc",
+					show_timer = false,
+					show_value = true,
+					upd_func = function(t,dt,values,display_setting,buff_data)
+						return (1 - managers.player:damage_reduction_skill_multiplier())
+					end,
+					get_display_string = function(buff,value)
+						return string.format("%i%%",value*100)
+					end,
+					icon_data = {
+						source = "skill",
+						skill_id = "juggernaut"
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					},
+					preview = {
+						value = 0.5
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			damage_resistance = { --general damage resist
-				disabled = false,
-				source = "general",
-				text_id = "menu_kitr_buff_damage_resistance_title",
-				desc_id = "menu_kitr_buff_damage_resistance_desc",
-				show_timer = false,
-				show_value = true,
-				upd_func = function(t,dt,values,display_setting,buff_data)
-					return (1 - managers.player:damage_reduction_skill_multiplier())
-				end,
-				get_display_string = function(buff,value)
-					return string.format("%i%%",value*100)
-				end,
-				icon_data = {
-					source = "skill",
-					skill_id = "juggernaut"
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			fixed_health_regen = { --general health regen (heal +specific amount)
-				disabled = false,
-				source = "general",
-				text_id = "menu_kitr_buff_fixed_health_regen_title",
-				desc_id = "menu_kitr_buff_fixed_health_regen_desc",
-				show_timer = false,
-				show_value = true,
-				--[[
-				upd_func = function(t,dt,values,display_setting,buff_data)
-					local pm = managers.player
-					local player = pm:local_player()
-					if player then
+				fixed_health_regen = { --general health regen (heal +specific amount)
+					disabled = false,
+					source = "general",
+					text_id = "menu_kitr_buff_fixed_health_regen_title",
+					desc_id = "menu_kitr_buff_fixed_health_regen_desc",
+					show_timer = false,
+					show_value = true,
+					--[[
+					upd_func = function(t,dt,values,display_setting,buff_data)
+						local pm = managers.player
+						local player = pm:local_player()
+						if player then
+							local dmg_ext = player:character_damage()
+							return pm:fixed_health_regen()
+						end
+					end,
+					get_display_string = function(buff,value)
+						return string.format("+%i%%",value*100)
+					end,
+					modify_timer_func = function(timer)
+						local pm = managers.player
+						local player = pm:local_player()
 						local dmg_ext = player:character_damage()
-						return pm:fixed_health_regen()
-					end
-				end,
-				get_display_string = function(buff,value)
-					return string.format("+%i%%",value*100)
-				end,
-				modify_timer_func = function(timer)
-					local pm = managers.player
-					local player = pm:local_player()
-					local dmg_ext = player:character_damage()
-					return dmg_ext._health_regen_update_timer or 0 
-				end,
-				--]]
-				icon_data = {
-					source = "hud_icon",
-					skill_id = "csb_health" --temp
+						return dmg_ext._health_regen_update_timer or 0 
+					end,
+					--]]
+					icon_data = {
+						source = "hud_icon",
+						skill_id = "csb_health" --temp
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					},
+					preview = {
+						value = 0.4
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			health_regen = { --general fixed health regen (heal % of max health)
-				disabled = false,
-				source = "general",
-				text_id = "menu_kitr_buff_health_regen_title",
-				desc_id = "menu_kitr_buff_health_regen_desc",
-				show_timer = false,
-				show_value = true,
-				--[[
-				upd_func = function(t,dt,values,display_setting,buff_data)
-					local pm = managers.player
-					local player = pm:local_player()
-					local dmg_ext = player:character_damage()
-					local time_left = dmg_ext._health_regen_update_timer or 0
-					values[1] = pm:health_regen()
-				end,
-				get_display_string = function(buff,value)
-					return string.format("+%0.2f",value*100)
-				end,
-				modify_timer_func = function()
-					local pm = managers.player
-					local player = pm:local_player()
-					local dmg_ext = player:character_damage()
-					return dmg_ext._health_regen_update_timer or 0 
-				end,
-				--]]
-				icon_data = {
+				health_regen = { --general fixed health regen (heal % of max health)
+					disabled = false,
+					source = "general",
+					text_id = "menu_kitr_buff_health_regen_title",
+					desc_id = "menu_kitr_buff_health_regen_desc",
+					show_timer = false,
+					show_value = true,
+					--[[
+					upd_func = function(t,dt,values,display_setting,buff_data)
+						local pm = managers.player
+						local player = pm:local_player()
+						local dmg_ext = player:character_damage()
+						local time_left = dmg_ext._health_regen_update_timer or 0
+						values[1] = pm:health_regen()
+					end,
+					get_display_string = function(buff,value)
+						return string.format("+%0.2f",value*100)
+					end,
+					modify_timer_func = function()
+						local pm = managers.player
+						local player = pm:local_player()
+						local dmg_ext = player:character_damage()
+						return dmg_ext._health_regen_update_timer or 0 
+					end,
+					--]]
+					icon_data = {
+						source = "perk",
+						tree = 2,
+						card = 9
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				
+				--todo weapon buffs
+				weapon_reload_speed = {
+					disabled = false,
+					source = "general",
+					text_id = "menu_kitr_buff_weapon_reload_speed_multiplier_title",
+					desc_id = "menu_kitr_buff_weapon_reload_speed_multiplier_desc",
+					show_timer = false,
+					show_value = true,
+					--[[
+					upd_func = function(t,dt,values,display_setting,buff_data)
+						local player = managers.player:local_player()
+						local inv_ext = player:inventory()
+						local equipped_unit = inv_ext:equipped_unit()
+						if alive(equipped_unit) then 
+							local base = equipped_unit:base()
+							values[1] = base and base:reload_speed_multiplier() or values[1]
+						end
+					end,
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value*100)
+					end,
+					--]]
+					icon_data = {
+						source = "hud_icon",
+						skill_id = "equipment_stapler"
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				weapon_damage_bonus = {
+					disabled = false,
+					source = "general",
+					text_id = "menu_kitr_buff_weapon_damage_multiplier_title",
+					desc_id = "menu_kitr_buff_weapon_damage_multiplier_desc",
+					show_timer = false,
+					show_value = true,
+					--[[
+					upd_func = function(t,dt,values,display_setting,buff_data)
+						local player = managers.player:local_player()
+						local inv_ext = player:inventory()
+						local equipped_unit = inv_ext:equipped_unit()
+						if alive(equipped_unit) then 
+							local base = equipped_unit:base()
+							values[1] = base and base:damage_multiplier() or values[1]
+						end
+					end,
+					--]]
+					get_display_string = function(buff,value)
+						return string.format("+%0.2f%%",value*100)
+					end,
+					icon_data = {
+						source = "hud_icon",
+						skill_id = "equipment_stapler"
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				weapon_accuracy_bonus = {
+					disabled = true,
+					source = "general",
+					text_id = "menu_kitr_buff_weapon_accuracy_multiplier_title",
+					desc_id = "menu_kitr_buff_weapon_accuracy_multiplier_desc",
+					show_timer = false,
+					show_value = true,
+					--[[
+					upd_func = function(t,dt,values,display_setting,buff_data)
+						values[1] = managers.player:get_accuracy_multiplier()
+					end,
+					--]]
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value*100)
+					end,
+					icon_data = {
+						source = "hud_icon",
+						skill_id = "equipment_stapler"
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				melee_damage_bonus = { --this basically just checks the bloodthirst melee damage bonus
+					disabled = true,
+					source = "general",
+					text_id = "menu_kitr_buff_melee_damage_multiplier_title",
+					desc_id = "menu_kitr_buff_melee_damage_multiplier_desc",
+					show_timer = false,
+					show_value = true,
+					--[[
+					upd_func = function(t,dt,values,display_setting,buff_data)
+						values[1] = managers.player:get_melee_dmg_multiplier()
+					end,
+					--]]
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value*100)
+					end,
+					icon_data = {
+						source = "hud_icon",
+						skill_id = "equipment_stapler"
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				
+				
+				ecm_jammer = { --(ecm jammer timer)
+					disabled = false,
+					source = "general",
+					name_id = "kitr_buff_ecm_jammer_title",
+					show_timer = false,
+					show_value = true,
+					--[[
+					upd_func = function(t,dt,values,display_setting,buff_data)
+						local threshold = display_setting.value_threshold
+						local groupaistate = managers.groupai:state()
+						local ecm_jammers = groupaistate._ecm_jammers
+						for u_key,ecm_data in pairs(ecm_jammers) do
+							local unit = ecm_data.unit
+							local jam_settings = ecm_data.settings
+		--					if jam_settings.camera then 
+							
+		--					end
+						end
+		--				values[1] = "example"
+					end,
+					--]]
+					icon_data = {
+						source = "skill",
+						skill_id = "ecm_2x",
+						tree = 4
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				ecm_feedback = { --(ecm feedback timer) 
+					disabled = false,
+					source = "general",
+					text_id = "kitr_buff_ecm_feedback_title",
+					show_timer = true,
+					show_value = false,
+					icon_data = {
+						source = "skill",
+						skill_id = "ecm_booster",
+						tree = 4
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+			
+			
+		--mastermind
+				combat_medic = { --combat medic (damage reduction during/after res)
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_combat_medic_beta",
+					desc_id = "menu_kitr_buff_combat_medic_desc",
+					icon_data = {
+						source = "skill",
+						skill_id = "combat_medic",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("%i%%",(1-value)*100)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				combat_medic_damage_mul = {
+					disabled = true, --actually disabled
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_combat_medic_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "combat_medic",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f",value)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				combat_medic_steelsight_mul = {
+					disabled = true, --actually disabled
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_combat_medic_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "combat_medic",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f",value)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				quick_fix = { --quick fix (damage reduction after using health kit)
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_tea_time_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "tea_time",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",(1-value)*100)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				painkillers = { --painkillers (damage reduction for teammates you revive)
+					disabled = false, --needs testing
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_fast_learner_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "fast_learner",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				inspire_basic = { --inspire basic (move speed + reload speed bonus for teammates you shout at);
+					disabled = false, --not implemented; requires hooking to player movement ext
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_inspire_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "inspire",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f",value)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				inspire_basic_cooldown = {
+					disabled = false, --not implemented; requires checking var :rally_skill_data().morale_boost_delay_t in player movement ext
+					show_timer = true,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_inspire_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "inspire",
+						tree = 1
+					},
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
+				},
+				inspire_aced_cooldown = { --value is 1, which is evidently meaningless, so don't bother showing it, just the timer
+					disabled = false,
+					show_timer = true,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_inspire_beta",
+					desc_id = "menu_kitr_buff_inspire_aced_cooldown_desc",
+					icon_data = {
+						source = "skill",
+						skill_id = "inspire",
+						tree = 1
+					},
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
+				},
+				forced_friendship = { --forced friendship (nearby civs give damage absorption)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_triathlete_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "triathlete",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				partners_in_crime = { --partners in crime (extra max health while you have a convert)
+					disabled = true, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_control_freak_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "control_freak",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("+%0.2f%%",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false
+				},
+				stockholm_syndrome = { --stockholm syndrome aced (hostages autotrade for your return)
+					disabled = true, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_stockholm_syndrome_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "stockholm_syndrome",
+						tree = 1
+					},
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				stable_shot = { --stable shot (bonus accuracy while standing still)
+					disabled = true, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_stable_shot_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "stable_shot",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				rifleman = { --rifleman (bonus accuracy while moving)
+					disabled = true, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_rifleman_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "rifleman",
+						tree = 1
+					},
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false
+				},
+				ammo_efficiency = { --ammo efficiency (consecutive headshots refund ammo); show stacks
+					disabled = false, --not implemented; requires "guessing" or coroutine override
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_single_shot_ammo_return_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "spotter_teamwork",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("x%0.2f",value)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				aggressive_reload = { --aggressive reload aced (killing headshot reduces reload speed)
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_speedy_reload_beta",
+					show_timer = true,
+					icon_data = {
+						source = "skill",
+						skill_id = "speedy_reload",
+						tree = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2fx",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				
+		--enforcer
+				underdog_basic = { --underdog (basic: damage bonus when targeted by enemies; aced: damage resist when targeted by enemies)
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_underdog_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "underdog",
+						tree = 2
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				underdog_aced = { --underdog (basic: damage bonus when targeted by enemies; aced: damage resist when targeted by enemies)
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_underdog_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "underdog",
+						tree = 2
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				far_away = { --far away basic (accuracy bonus while ads with shotguns)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_far_away_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "far_away",
+						tree = 2
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				close_by = { --close by (rof increase while hipfire with shotguns)
+					disabled = true, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_close_by_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "close_by",
+						tree = 2
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false
+				},
+				overkill = { --overkill (basic: damage bonus for saw/shotgun on kill with saw/shotgun; aced: damage bonus for all ranged weapons on kill with saw/shotgun)
+					disabled = false, 
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_overkill_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "overkill",
+						tree = 2
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				die_hard = { --die hard basic (damage resist while interacting)
+					disabled = false, --not implemented; requires manual checking via upd_func
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_show_of_force_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "show_of_force",
+						tree = 2
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				bullseye = { --bullseye (armorgate) cooldown
+					disabled = false,
+					show_timer = true,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_prison_wife_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "prison_wife",
+						tree = 2
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
+				},
+				scavenger = { --scavenger aced: extra ammo box every 6 kills
+					disabled = false, --not implemented; requires hooking to playermanager to get var ._num_kills % ._target_kills
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_scavenging_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "scavenging",
+						tree = 2
+					},
+					get_display_string = function(buff,value)
+						return string.format("%i",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				bullet_storm = { --bulletstorm (temp don't consume ammo after using your ammo bags)
+					disabled = false,
+					show_timer = true,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_ammo_reservoir_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "ammo_reservoir",
+						tree = 2
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				fully_loaded = { --fully loaded aced (escalating throwable restore chance from ammo boxes)
+					disabled = false, --not implemented; requires guessing FullyLoaded coroutine
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_bandoliers_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "bandoliers",
+						tree = 2
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+
+		--technician
+				hardware_expert = { --hardware expert (drill upgrades)
+					disabled = true, --not implemented
+					show_timer = false,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_hardware_expert_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "hardware_expert",
+						tree = 3
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false
+				},
+				drill_sawgeant = { --drill sawgeant (drill upgrades)
+					disabled = true, --not implemented
+					show_timer = false,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_drill_expert_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "drill_expert",
+						tree = 3
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false
+				},
+				kick_starter = { --kickstarter (drill upgrades); also show when a drill has attempted kickstarter
+					disabled = true, --not implemented
+					show_timer = false,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_kick_starter_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "kick_starter",
+						tree = 3
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false
+				},
+				fire_control = { --fire control (basic: accuracy while hipfiring; aced: accuracy penalty reduction when moving)
+					disabled = true, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_fire_control_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "fire_control",
+						tree = 3
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2fx",value)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false
+				},
+				lock_n_load = { --lock n' load aced (reload time reduction after autofire kills with lmg/ar/smg/specials )
+					disabled = false,
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_shock_and_awe_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "shock_and_awe",
+						tree = 3
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2fx",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				
+			--ghost
+				chameleon = { --sixth sense basic (mark nearby enemies)
+					disabled = false, --not implemented; requires hooking to playerstandard:_update_omniscience()
+					show_timer = true,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_chameleon_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "chameleon",
+						tree = 4
+					},
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				second_chances = { --nimble basic (camera loop)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_second_chances_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "second_chances",
+						tree = 4
+					},
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				dire_chance = { --dire need (stagger chance when armor is broken)
+					disabled = false,
+					show_timer = true,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_dire_need_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "dire_need",
+						tree = 4
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f",value)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				second_wind = { --second wind (speed bonus on armor break)
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_scavenger_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "scavenger",
+						tree = 4
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2fx",value)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				second_wind_aced = {
+					disabled = false,
+					show_timer = false,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_scavenger_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "scavenger",
+						tree = 4
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2fx",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+		--needs a proc countdown timer, and effect timer
+				unseen_strike = { --unseen strike (crit chance when not taking damage)
+					disabled = false, --not implemented (requires guessing coroutine UnseenStrike)
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_unseen_strike_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "unseen_strike",
+						tree = 4
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+			
+			--fugitive
+				desperado = { --desperado (stacking accuracy bonus per hit for pistols)
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_expert_handling",
+					icon_data = {
+						source = "skill",
+						skill_id = "expert_handling",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",(1-value) * 100)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				trigger_happy = { --trigger happy (stacking damage bonus per hit for pistols)
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_trigger_happy_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "trigger_happy",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",n * 100)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				running_from_death_basic_reload_speed = { --running_from_death (basic: reload/swap speed bonus after being revived; aced: move speed bonus after being revived)
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_running_from_death_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "running_from_death",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2fx",value)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				running_from_death_basic_swap_speed = {
+					disabled = false, --redundant; disabled
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_running_from_death_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "running_from_death",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2fx",value)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				running_from_death_aced = {
+					disabled = true, --redundant; disabled
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_running_from_death_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "running_from_death",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2fx",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				up_you_go = { --up you go basic: damage resistance after being revived
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_up_you_go_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "up_you_go",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%i%%",(1-value) * 100)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				swan_song = { --swan song: temporarily continue fighting after reaching 0 health
+					disabled = false,
+					show_timer = true,
+					show_value = false, --the value given is 1, as a damage multiplier, so don't bother showing it
+					source = "skill",
+					text_id = "menu_perseverance_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "perseverance",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value*100)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				messiah = { --messiah: kill an enemy to self-revive
+					disabled = false, --not implemented; requires hooking to playermanager to get var ._messiah_charges
+					show_timer = false,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_pistol_beta_messiah",
+					icon_data = {
+						source = "skill",
+						skill_id = "messiah",
+						tree = 5
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				bloodthirst_basic = { --bloodthirst basic: stacking melee damage bonus per kill
+					disabled = false, --not implemented; requires guessing coroutine playerbloodthirstbase
+					show_timer = true,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_bloodthirst",
+					icon_data = {
+						source = "skill",
+						skill_id = "bloodthirst",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value*100)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				bloodthirst_aced = { --bloodthirst aced: reload speed bonus on melee kill
+					disabled = false,
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_bloodthirst",
+					icon_data = {
+						source = "skill",
+						skill_id = "bloodthirst",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%i%%",value*100)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				counterstrike = { --counterstrike (counter melee/cloaker kick)
+					disabled = false, --not implemented; requires upd_func to check playerstandard meleeing state
+					show_timer = false,
+					show_value = false,
+					source = "skill",
+					text_id = "menu_drop_soap_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "drop_soap",
+						tree = 5
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+				berserker_basic = { --berserker (melee damage bonus inverse to health ratio)
+					disabled = false, --not implemented; requires upd_func
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_wolverine_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "wolverine",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%i%%",value*100)
+					end,
+					is_aced = false,
+					is_basic = true,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				berserker_aced = { --berserker (ranged damage bonus inverse to health ratio)
+					disabled = false, --not implemented; requires upd_func
+					show_timer = false,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_wolverine_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "wolverine",
+						tree = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%i%%",value*100)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+		--perkdecks
+
+			--crew chief
+				marathon_man = { --marathon man (damage reduction in medium range of enemies)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
 					source = "perk",
-					tree = 2,
-					card = 9
+					text_id = "menu_deck1_1",
+					icon_data = {
+						source = "perk",
+						tree = 1,
+						card = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("%i%%",value*100)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			
-			--todo weapon buffs
-			weapon_reload_speed = {
-				disabled = false,
-				source = "general",
-				text_id = "menu_kitr_buff_weapon_reload_speed_multiplier_title",
-				desc_id = "menu_kitr_buff_weapon_reload_speed_multiplier_desc",
-				show_timer = false,
-				show_value = true,
-				--[[
-				upd_func = function(t,dt,values,display_setting,buff_data)
-					local player = managers.player:local_player()
-					local inv_ext = player:inventory()
-					local equipped_unit = inv_ext:equipped_unit()
-					if alive(equipped_unit) then 
-						local base = equipped_unit:base()
-						values[1] = base and base:reload_speed_multiplier() or values[1]
-					end
-				end,
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value*100)
-				end,
-				--]]
-				icon_data = {
-					source = "hud_icon",
-					skill_id = "equipment_stapler"
+				hostage_situation = { --hostage situation (damage resistance per hostage)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "perk",
+					text_id = "menu_deck1_5",
+					icon_data = {
+						source = "perk",
+						tree = 1,
+						card = 5
+					},
+					get_display_string = function(buff,value)
+						return string.format("%i%%",value*100)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			weapon_damage_bonus = {
-				disabled = false,
-				source = "general",
-				text_id = "menu_kitr_buff_weapon_damage_multiplier_title",
-				desc_id = "menu_kitr_buff_weapon_damage_multiplier_desc",
-				show_timer = false,
-				show_value = true,
-				--[[
-				upd_func = function(t,dt,values,display_setting,buff_data)
-					local player = managers.player:local_player()
-					local inv_ext = player:inventory()
-					local equipped_unit = inv_ext:equipped_unit()
-					if alive(equipped_unit) then 
-						local base = equipped_unit:base()
-						values[1] = base and base:damage_multiplier() or values[1]
-					end
-				end,
-				modify_value_func = function(n)
-					return (n - 1) * 100
-				end,
-				--]]
-				get_display_string = function(buff,value)
-					return string.format("+%0.2f%%",value*100)
-				end,
-				icon_data = {
-					source = "hud_icon",
-					skill_id = "equipment_stapler"
+			--muscle
+				meat_shield = { --meat shield (increased threat when close to allies)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "perk",
+					text_id = "menu_deck2_3",
+					icon_data = {
+						source = "perk",
+						tree = 2,
+						card = 3
+					},
+					get_display_string = function(buff,value)
+						return string.format("%i%%",value*100)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			weapon_accuracy_bonus = {
-				disabled = true,
-				source = "general",
-				text_id = "menu_kitr_buff_weapon_accuracy_multiplier_title",
-				desc_id = "menu_kitr_buff_weapon_accuracy_multiplier_desc",
-				show_timer = false,
-				show_value = true,
-				--[[
-				upd_func = function(t,dt,values,display_setting,buff_data)
-					values[1] = managers.player:get_accuracy_multiplier()
-				end,
-				--]]
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value*100)
-				end,
-				icon_data = {
-					source = "hud_icon",
-					skill_id = "equipment_stapler"
+			--armorer
+				reinforced_armor = { --reinforced armor (temporary invuln on armor break)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "perk",
+					text_id = "menu_deck3_7",
+					icon_data = {
+						source = "perk",
+						tree = 3,
+						card = 7
+					},
+					get_display_string = function(buff,value)
+						return string.format("%i%%",value*100)
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			melee_damage_bonus = { --this basically just checks the bloodthirst melee damage bonus
-				disabled = true,
-				source = "general",
-				text_id = "menu_kitr_buff_melee_damage_multiplier_title",
-				desc_id = "menu_kitr_buff_melee_damage_multiplier_desc",
-				show_timer = false,
-				show_value = true,
-				--[[
-				upd_func = function(t,dt,values,display_setting,buff_data)
-					values[1] = managers.player:get_melee_dmg_multiplier()
-				end,
-				--]]
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value*100)
-				end,
-				icon_data = {
-					source = "hud_icon",
-					skill_id = "equipment_stapler"
+				reinforced_armor_cooldown = { --(temp invuln cooldown)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
+					source = "perk",
+					text_id = "menu_deck3_7",
+					icon_data = {
+						source = "perk",
+						tree = 3,
+						card = 7
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			
-			
-			ecm_jammer = { --(ecm jammer timer)
-				disabled = true,
-				source = "general",
-				text_id = "menu_ecm_2x_beta",
-				show_timer = false,
-				show_value = true,
-				--[[
-				upd_func = function(t,dt,values,display_setting,buff_data)
-					local threshold = display_setting.value_threshold
-					local groupaistate = managers.groupai:state()
-					local ecm_jammers = groupaistate._ecm_jammers
-					for u_key,ecm_data in pairs(ecm_jammers) do
-						local unit = ecm_data.unit
-						local jam_settings = ecm_data.settings
-	--					if jam_settings.camera then 
+			--rogue
+				elusive = { --elusive (decreased threat when close to allies)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "perk",
+					text_id = "menu_deck4_3",
+					icon_data = {
+						source = "perk",
+						tree = 4,
+						card = 3
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+			--hitman
+				tooth_and_claw = { --tooth and claw (guaranteed armor regen timer after break)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
+					source = "perk",
+					text_id = "menu_deck5_9",
+					icon_data = {
+						source = "perk",
+						tree = 5,
+						card = 9
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+			--burglar
+				bag_of_tricks = { --bag of tricks/luck of the irish/dutch courage (reduced target chance from crouching still)
+					disabled = true, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "perk",
+					text_id = "menu_deck7_3",
+					icon_data = {
+						source = "perk",
+						tree = 7,
+						card = 3
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				breath_of_fresh_air = { --breath of fresh air (increased armor recovery rate when standing still)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
+					source = "perk",
+					text_id = "menu_deck7_9",
+					icon_data = {
+						source = "perk",
+						tree = 7,
+						card = 9
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = false
+					}
+				},
+			--infiltrator
+				overdog = { --overdog (damage resist when surrounded, stacking melee hit damage) (shared with sociopath)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = true,
+					source = "perk",
+					text_id = "menu_deck8_1",
+					icon_data = {
+						source = "perk",
+						tree = 8,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				basic_close_combat = { --basic close combat (damage resist when within medium range of enemy)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = true,
+					source = "perk",
+					text_id = "menu_deck8_3",
+					icon_data = {
+						source = "perk",
+						tree = 8,
+						card = 3
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
+				},
+				life_leech = { --life drain (melee hit restores health cooldown)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
+					source = "perk",
+					text_id = "menu_deck8_9",
+					icon_data = {
+						source = "perk",
+						tree = 8,
+						card = 9
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
+				},
+			--sociopath
+				tension = { --tension (armor gate on kill cooldown)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
+					source = "perk",
+					text_id = "menu_deck9_3",
+					icon_data = {
+						source = "perk",
+						tree = 9,
+						card = 3
 						
-	--					end
-					end
-	--				values[1] = "example"
-				end,
-				--]]
-				icon_data = {
-					source = "skill",
-					skill_id = "ecm_2x",
-					tree = 4
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			ecm_feedback = { --(ecm feedback timer) 
-				disabled = false,
-				source = "general",
-				text_id = "menu_ecm_booster_beta",
-				show_timer = true,
-				show_value = false,
-				icon_data = {
-					source = "skill",
-					skill_id = "ecm_booster",
-					tree = 4
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		
-		
-	--mastermind
-			combat_medic = { --combat medic (damage reduction during/after res)
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_combat_medic_beta",
-				desc_id = "menu_kitr_buff_combat_medic_desc",
-				icon_data = {
-					source = "skill",
-					skill_id = "combat_medic",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("%i%%",(1-value)*100)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			combat_medic_damage_mul = {
-				disabled = true, --actually disabled
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_combat_medic_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "combat_medic",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f",value)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			combat_medic_steelsight_mul = {
-				disabled = true, --actually disabled
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_combat_medic_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "combat_medic",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f",value)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			quick_fix = { --quick fix (damage reduction after using health kit)
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_tea_time_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "tea_time",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",(1-value)*100)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			painkillers = { --painkillers (damage reduction for teammates you revive)
-				disabled = false, --needs testing
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_fast_learner_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "fast_learner",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			inspire_basic = { --inspire basic (move speed + reload speed bonus for teammates you shout at);
-				disabled = false, --not implemented; requires hooking to player movement ext
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_inspire_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "inspire",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f",value)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false,
-			},
-			inspire_basic_cooldown = {
-				disabled = false, --not implemented; requires checking var :rally_skill_data().morale_boost_delay_t in player movement ext
-				show_timer = true,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_inspire_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "inspire",
-					tree = 1
-				},
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = true
-			},
-			inspire_aced_cooldown = { --value is 1, which is evidently meaningless, so don't bother showing it, just the timer
-				disabled = false,
-				show_timer = true,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_inspire_beta",
-				desc_id = "menu_kitr_buff_inspire_aced_cooldown_desc",
-				icon_data = {
-					source = "skill",
-					skill_id = "inspire",
-					tree = 1
-				},
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = true
-			},
-			forced_friendship = { --forced friendship (nearby civs give damage absorption)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_triathlete_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "triathlete",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			partners_in_crime = { --partners in crime (extra max health while you have a convert)
-				disabled = true, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_control_freak_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "control_freak",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("+%0.2f%%",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			stockholm_syndrome = { --stockholm syndrome aced (hostages autotrade for your return)
-				disabled = true, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_stockholm_syndrome_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "stockholm_syndrome",
-					tree = 1
-				},
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			stable_shot = { --stable shot (bonus accuracy while standing still)
-				disabled = true, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_stable_shot_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "stable_shot",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			rifleman = { --rifleman (bonus accuracy while moving)
-				disabled = true, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_rifleman_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "rifleman",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			ammo_efficiency = { --ammo efficiency (consecutive headshots refund ammo); show stacks
-				disabled = false, --not implemented; requires "guessing" or coroutine override
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_single_shot_ammo_return_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "spotter_teamwork",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("x%0.2f",value)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			aggressive_reload = { --aggressive reload aced (killing headshot reduces reload speed)
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_speedy_reload_beta",
-				show_timer = true,
-				icon_data = {
-					source = "skill",
-					skill_id = "speedy_reload",
-					tree = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2fx",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			
-	--enforcer
-			underdog_basic = { --underdog (basic: damage bonus when targeted by enemies; aced: damage resist when targeted by enemies)
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_underdog_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "underdog",
-					tree = 2
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			underdog_aced = { --underdog (basic: damage bonus when targeted by enemies; aced: damage resist when targeted by enemies)
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_underdog_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "underdog",
-					tree = 2
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			far_away = { --far away basic (accuracy bonus while ads with shotguns)
-				disabled = true, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_far_away_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "far_away",
-					tree = 2
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			close_by = { --close by (rof increase while hipfire with shotguns)
-				disabled = true, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_close_by_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "close_by",
-					tree = 2
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			overkill = { --overkill (basic: damage bonus for saw/shotgun on kill with saw/shotgun; aced: damage bonus for all ranged weapons on kill with saw/shotgun)
-				disabled = false, 
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_overkill_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "overkill",
-					tree = 2
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			die_hard = { --die hard basic (damage resist while interacting)
-				disabled = false, --not implemented; requires manual checking via upd_func
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_show_of_force_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "show_of_force",
-					tree = 2
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			bullseye = { --bullseye (armorgate) cooldown
-				disabled = false,
-				show_timer = true,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_prison_wife_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "prison_wife",
-					tree = 2
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-			scavenger = { --scavenger aced: extra ammo box every 6 kills
-				disabled = false, --not implemented; requires hooking to playermanager to get var ._num_kills % ._target_kills
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_scavenging_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "scavenging",
-					tree = 2
-				},
-				get_display_string = function(buff,value)
-					return string.format("%i",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false,
-				display_format = ""
-			},
-			bullet_storm = { --bulletstorm (temp don't consume ammo after using your ammo bags)
-				disabled = false,
-				show_timer = true,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_ammo_reservoir_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "ammo_reservoir",
-					tree = 2
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			fully_loaded = { --fully loaded aced (escalating throwable restore chance from ammo boxes)
-				disabled = false, --not implemented; requires guessing FullyLoaded coroutine
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_bandoliers_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "bandoliers",
-					tree = 2
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-
-	--technician
-			hardware_expert = { --hardware expert (drill upgrades)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_hardware_expert_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "hardware_expert",
-					tree = 3
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			drill_sawgeant = { --drill sawgeant (drill upgrades)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_drill_expert_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "drill_expert",
-					tree = 3
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			kick_starter = { --kickstarter (drill upgrades); also show when a drill has attempted kickstarter
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_kick_starter_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "kick_starter",
-					tree = 3
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			fire_control = { --fire control (basic: accuracy while hipfiring; aced: accuracy penalty reduction when moving)
-				disabled = true, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_fire_control_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "fire_control",
-					tree = 3
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2fx",value)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			lock_n_load = { --lock n' load aced (reload time reduction after autofire kills with lmg/ar/smg/specials )
-				disabled = false,
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_shock_and_awe_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "shock_and_awe",
-					tree = 3
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2fx",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			
-		--ghost
-			chameleon = { --sixth sense basic (mark nearby enemies)
-				disabled = false, --not implemented; requires hooking to playerstandard:_update_omniscience()
-				show_timer = true,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_chameleon_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "chameleon",
-					tree = 4
-				},
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			second_chances = { --nimble basic (camera loop)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_second_chances_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "second_chances",
-					tree = 4
-				},
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			dire_chance = { --dire need (stagger chance when armor is broken)
-				disabled = false,
-				show_timer = true,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_dire_need_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "dire_need",
-					tree = 4
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f",value)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			second_wind = { --second wind (speed bonus on armor break)
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_scavenger_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "scavenger",
-					tree = 4
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2fx",value)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			second_wind_aced = {
-				disabled = false,
-				show_timer = false,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_scavenger_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "scavenger",
-					tree = 4
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2fx",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-	--needs a proc countdown timer, and effect timer
-			unseen_strike = { --unseen strike (crit chance when not taking damage)
-				disabled = false, --not implemented (requires guessing coroutine UnseenStrike)
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_unseen_strike_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "unseen_strike",
-					tree = 4
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		
-		--fugitive
-			desperado = { --desperado (stacking accuracy bonus per hit for pistols)
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_expert_handling",
-				icon_data = {
-					source = "skill",
-					skill_id = "expert_handling",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",(1-value) * 100)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			trigger_happy = { --trigger happy (stacking damage bonus per hit for pistols)
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_trigger_happy_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "trigger_happy",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",n * 100)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			running_from_death_basic_reload_speed = { --running_from_death (basic: reload/swap speed bonus after being revived; aced: move speed bonus after being revived)
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_running_from_death_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "running_from_death",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2fx",value)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false,
-				display_format = "%0.2fx"
-			},
-			running_from_death_basic_swap_speed = {
-				disabled = true, --redundant; disabled
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_running_from_death_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "running_from_death",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2fx",value)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			running_from_death_aced = {
-				disabled = true, --redundant; disabled
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_running_from_death_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "running_from_death",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2fx",value)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			up_you_go = { --up you go basic: damage resistance after being revived
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_up_you_go_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "up_you_go",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%i%%",(1-value) * 100)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			swan_song = { --swan song: temporarily continue fighting after reaching 0 health
-				disabled = false,
-				show_timer = true,
-				show_value = false, --the value given is 1, as a damage multiplier, so don't bother showing it
-				source = "skill",
-				text_id = "menu_perseverance_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "perseverance",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value*100)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			messiah = { --messiah: kill an enemy to self-revive
-				disabled = false, --not implemented; requires hooking to playermanager to get var ._messiah_charges
-				show_timer = false,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_pistol_beta_messiah",
-				icon_data = {
-					source = "skill",
-					skill_id = "messiah",
-					tree = 5
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			bloodthirst_basic = { --bloodthirst basic: stacking melee damage bonus per kill
-				disabled = false, --not implemented; requires guessing coroutine playerbloodthirstbase
-				show_timer = true,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_bloodthirst",
-				icon_data = {
-					source = "skill",
-					skill_id = "bloodthirst",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%0.2f%%",value*100)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			bloodthirst_aced = { --bloodthirst aced: reload speed bonus on melee kill
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_bloodthirst",
-				icon_data = {
-					source = "skill",
-					skill_id = "bloodthirst",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%i%%",value*100)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-			counterstrike = { --counterstrike (counter melee/cloaker kick)
-				disabled = false, --not implemented; requires upd_func to check playerstandard meleeing state
-				show_timer = false,
-				show_value = false,
-				source = "skill",
-				text_id = "menu_drop_soap_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "drop_soap",
-					tree = 5
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			berserker_basic = { --berserker (melee damage bonus inverse to health ratio)
-				disabled = false, --not implemented; requires upd_func
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_wolverine_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "wolverine",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%i%%",value*100)
-				end,
-				is_aced = false,
-				is_basic = true,
-				is_cooldown = false
-			},
-			berserker_aced = { --berserker (ranged damage bonus inverse to health ratio)
-				disabled = false, --not implemented; requires upd_func
-				show_timer = false,
-				show_value = true,
-				source = "skill",
-				text_id = "menu_wolverine_beta",
-				icon_data = {
-					source = "skill",
-					skill_id = "wolverine",
-					tree = 5
-				},
-				get_display_string = function(buff,value)
-					return string.format("%i%%",value*100)
-				end,
-				is_aced = true,
-				is_basic = false,
-				is_cooldown = false
-			},
-	--perkdecks
-
-		--crew chief
-			marathon_man = { --marathon man (damage reduction in medium range of enemies)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck1_1",
-				icon_data = {
+				clean_hit = { --clean hit (health on melee kill cooldown)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 1,
-					card = 1
+					text_id = "menu_deck9_5",
+					icon_data = {
+						source = "perk",
+						tree = 9,
+						card = 5
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				get_display_string = function(buff,value)
-					return string.format("%i%%",value*100)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			hostage_situation = { --hostage situation (damage resistance per hostage)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck1_5",
-				icon_data = {
+				overdose = { --overdose (armor gate on medium range kill cooldown)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 1,
-					card = 5
+					text_id = "menu_deck9_7",
+					icon_data = {
+						source = "perk",
+						tree = 9,
+						card = 7
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				get_display_string = function(buff,value)
-					return string.format("%i%%",value*100)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--muscle
-			meat_shield = { --meat shield (increased threat when close to allies)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck2_3",
-				icon_data = {
+			--gambler
+				ammo_box_pickup_health = { --medical supplies (health on ammo box pickup cooldown)
+					disabled = false,
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 2,
-					card = 3
+					text_id = "menu_deck10_1",
+					icon_data = {
+						source = "perk",
+						tree = 10,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				get_display_string = function(buff,value)
-					return string.format("%i%%",value*100)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--armorer
-			reinforced_armor = { --reinforced armor (temporary invuln on armor break)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck3_7",
-				icon_data = {
+				ammo_box_pickup_share = { --ammo give out (ammo box team share cooldown)
+					disabled = false,
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 3,
-					card = 7
+					text_id = "menu_deck10_3",
+					icon_data = {
+						source = "perk",
+						tree = 10,
+						card = 3
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				get_display_string = function(buff,value)
-					return string.format("%i%%",value*100)
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			reinforced_armor_cooldown = { --(temp invuln cooldown)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck3_7",
-				icon_data = {
+			--grinder
+				histamine = { --histamine (current health on damage stacks/current duration)
+					disabled = false, --not implemented
+					show_timer = true,  
+					show_value = false,
 					source = "perk",
-					tree = 3,
-					card = 7
+					text_id = "menu_deck11_1",
+					icon_data = {
+						source = "perk",
+						tree = 11,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-		--rogue
-			elusive = { --elusive (decreased threat when close to allies)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck4_3",
-				icon_data = {
+				histamine_cooldown = { --histamine (health on damage stacks cooldown)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 4,
-					card = 3
+					text_id = "menu_deck11_1",
+					icon_data = {
+						source = "perk",
+						tree = 11,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--hitman
-			tooth_and_claw = { --tooth and claw (guaranteed armor regen timer after break)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck5_9",
-				icon_data = {
+			--yakuza
+				koi_irezumi = { --koi irezumi (armor recovery rate inverse to health)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
 					source = "perk",
-					tree = 5,
-					card = 9
+					text_id = "menu_deck12_1",
+					icon_data = {
+						source = "perk",
+						tree = 12,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false,
-				display_format = ""
-			},
-		--burglar
-			bag_of_tricks = { --bag of tricks/luck of the irish/dutch courage (reduced target chance from crouching still)
-				disabled = true, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck7_3",
-				icon_data = {
+				hebi_irezumi = { --hebi irezumi (move speed inverse to health)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
 					source = "perk",
-					tree = 7,
-					card = 3
+					text_id = "menu_deck12_3",
+					icon_data = {
+						source = "perk",
+						tree = 12,
+						card = 3
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false,
-				display_format = ""
-			},
-			breath_of_fresh_air = { --breath of fresh air (increased armor recovery rate when standing still)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck7_9",
-				icon_data = {
+			--ex-president
+				point_break = { --point break (stored health per kill)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
 					source = "perk",
-					tree = 7,
-					card = 9
+					text_id = "menu_deck13_1",
+					icon_data = {
+						source = "perk",
+						tree = 13,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--infiltrator
-			overdog = { --overdog (damage resist when surrounded, stacking melee hit damage) (shared with sociopath)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck8_1",
-				icon_data = {
+			--maniac
+				excitement = { --excitement (hysteria stacks + decay timer)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = true,
 					source = "perk",
-					tree = 8,
-					card = 1
+					text_id = "menu_deck14_1",
+					icon_data = {
+						source = "perk",
+						tree = 14,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			basic_close_combat = { --basic close combat (damage resist when within medium range of enemy)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck8_3",
-				icon_data = {
+			--anarchist
+				blitzkrieg_bop = { --blitzkrieg bop (armor regen timer)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 8,
-					card = 3
+					text_id = "menu_deck15_1",
+					icon_data = {
+						source = "perk",
+						tree = 15,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			life_leech = { --life drain (melee hit restores health cooldown)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck8_9",
-				icon_data = {
+				lust_for_life = { --lust for life (armor on damage cooldown)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 8,
-					card = 9
+					text_id = "menu_deck15_7",
+					icon_data = {
+						source = "perk",
+						tree = 15,
+						card = 7
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-		--sociopath
-			tension = { --tension (armor gate on kill cooldown)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck9_3",
-				icon_data = {
+			--biker
+				prospect = { --prospect (health/armor on any crew kill)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = true,
 					source = "perk",
-					tree = 9,
-					card = 3
-					
+					text_id = "menu_deck16_1",
+					upd_func = function(t,dt,values,display_setting,buff_data)
+						
+					end,
+					--[[
+					format_values_func = function(values,display_setting)
+						return string.format("x%i",#values)
+					end,
+					get_display_string = function(buff,value)
+						return string.format("%i%%",value*100)
+					end,
+					--]]
+					icon_data = {
+						source = "perk",
+						tree = 16,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-			clean_hit = { --clean hit (health on melee kill cooldown)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck9_5",
-				icon_data = {
+			--kingpin
+				kingpin_injector = { --injector throwable duration + damage resist
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 9,
-					card = 5
+					text_id = "menu_deck17_1",
+					icon_data = {
+						source = "perk",
+						tree = 17,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-			overdose = { --overdose (armor gate on medium range kill cooldown)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck9_7",
-				icon_data = {
+			--sicario
+				sicario_smoke_bomb = { --smoke bomb (cooldown, in-screen effect)
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = false,
 					source = "perk",
-					tree = 9,
-					card = 7
+					text_id = "menu_deck18_1",
+					icon_data = {
+						source = "perk",
+						tree = 18,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-		--gambler
-			ammo_box_pickup_health = { --medical supplies (health on ammo box pickup cooldown)
-				disabled = false,
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck10_1",
-				icon_data = {
+				twitch = { --twitch shot dodge gain
+					disabled = false, --not implemented
+					show_timer = false,
+					show_value = true,
 					source = "perk",
-					tree = 10,
-					card = 1
+					text_id = "menu_deck18_3",
+					icon_data = {
+						source = "perk",
+						tree = 18,
+						card = 3
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-			ammo_box_pickup_share = { --ammo give out (ammo box team share cooldown)
-				disabled = false,
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck10_3",
-				icon_data = {
+				twitch_cooldown = { --twitch (shot dodge cooldown)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 10,
-					card = 3
+					text_id = "menu_deck18_3",
+					icon_data = {
+						source = "perk",
+						tree = 18,
+						card = 3
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-		--grinder
-			histamine = { --histamine (current health on damage stacks/current duration)
-				disabled = false, --not implemented
-				show_timer = true,  
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck11_1",
-				icon_data = {
+			--stoic
+				virtue = { --virtue (hip flask)
+					disabled = true, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 11,
-					card = 1
+					text_id = "menu_deck19_1",
+					icon_data = {
+						source = "perk",
+						tree = 19,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			histamine_cooldown = { --histamine (health on damage stacks cooldown)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck11_1",
-				icon_data = {
+				delayed_damage = { --general delayed damage
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = true,
 					source = "perk",
-					tree = 11,
-					card = 1
+					text_id = "menu_kitr_buff_delayed_damage_title",
+					desc_id = "menu_kitr_buff_delayed_damage_desc",
+					icon_data = {
+						source = "perk",
+						tree = 19,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-		--yakuza
-			koi_irezumi = { --koi irezumi (armor recovery rate inverse to health)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck12_1",
-				icon_data = {
+				calm = { --calm (4s countdown free delayed damage negation)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 12,
-					card = 1
+					text_id = "menu_deck19_5",
+					icon_data = {
+						source = "perk",
+						tree = 19,
+						card = 5
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			hebi_irezumi = { --hebi irezumi (move speed inverse to health)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck12_3",
-				icon_data = {
+			--tag team
+				gas_dispenser = { --gas dispenser tagged/tagging status/duration?
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 12,
-					card = 3
+					text_id = "menu_deck20_1",
+					icon_data = {
+						source = "perk",
+						tree = 20,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--ex-president
-			point_break = { --point break (stored health per kill)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck13_1",
-				icon_data = {
+			--hacker
+				pocket_ecm_jammer = { --pocket ecm throwable (jammer mode)
+					disabled = false,
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 13,
-					card = 1
+					text_id = "kitr_buff_hacker_pecm_jammer_title",
+					icon_data = {
+						source = "perk",
+						tree = 21,
+						card = 1
+					},
+					get_display_string = nil,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--maniac
-			excitement = { --excitement (hysteria stacks + decay timer)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck14_1",
-				icon_data = {
+				pocket_ecm_feedback = { --pocket ecm throwable (feedback mode)
+					disabled = false,
+					show_timer = true,
+					show_value = true,
 					source = "perk",
-					tree = 14,
-					card = 1
+					text_id = "kitr_buff_hacker_pecm_feedback_title",
+					icon_data = {
+						source = "perk",
+						tree = 21,
+						card = 1
+					},
+					get_display_string = function(buff,value)
+						return string.format("x%i",value) -- number of ticks remaining
+					end,
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--anarchist
-			blitzkrieg_bop = { --blitzkrieg bop (armor regen timer)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck15_1",
-				icon_data = {
+				kluge = { --kluge (dodge on kill while feedback active)
+					disabled = false, --not implemented
+					show_timer = true,
+					show_value = true, -- dodge amount
 					source = "perk",
-					tree = 15,
-					card = 1
+					text_id = "menu_deck21_7",
+					icon_data = {
+						source = "perk",
+						tree = 21,
+						card = 7
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			lust_for_life = { --lust for life (armor on damage cooldown)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck15_7",
-				icon_data = {
+			--leech 
+				leech = { --leech throwable duration
+					disabled = true, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 15,
-					card = 7
+					text_id = "menu_deck22_1",
+					icon_data = {
+						source = "perk",
+						tree = 22,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-		--biker
-			prospect = { --prospect (health/armor on any crew kill)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck16_1",
-				upd_func = function(t,dt,values,display_setting,buff_data)
-					
-				end,
-				--[[
-				format_values_func = function(values,display_setting)
-					return string.format("x%i",#values)
-				end,
-				get_display_string = function(buff,value)
-					return string.format("%i%%",value*100)
-				end,
-				--]]
-				icon_data = {
+				leech_grace = { -- temp invuln on healthgate duration
+					disabled = true, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 16,
-					card = 1
+					text_id = "menu_deck22_1",
+					icon_data = {
+						source = "perk",
+						tree = 22,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--kingpin
-			kingpin_injector = { --injector throwable duration + damage resist
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck17_1",
-				icon_data = {
+				leech_cooldown = {
+					disabled = true, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
-					tree = 17,
-					card = 1
+					text_id = "menu_deck22_1",
+					icon_data = {
+						source = "perk",
+						tree = 22,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-		--sicario
-			sicario_smoke_bomb = { --smoke bomb (cooldown, in-screen effect)
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck18_1",
-				icon_data = {
+				copycat_primarykills = { -- show only when primary is out
+					disabled = false,
+					show_timer = false,
+					show_value = true,
 					source = "perk",
-					tree = 18,
-					card = 1
+					text_id = "kitr_buff_copycat_primarykills_title",
+					icon_data = {
+						source = "perk",
+						tree = 23,
+						card = 1
+					},
+					menu_options = {
+						enabled = true
+					}
 				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			twitch = { --twitch shot dodge gain
-				disabled = false, --not implemented
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_deck18_3",
-				icon_data = {
+				copycat_secondarykills = { -- show only when secondary is out
+					disabled = false,
+					show_timer = false,
+					show_value = true,
 					source = "perk",
-					tree = 18,
-					card = 3
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			twitch_cooldown = { --twitch (shot dodge cooldown)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck18_3",
-				icon_data = {
-					source = "perk",
-					tree = 18,
-					card = 3
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-		--stoic
-			virtue = { --virtue (hip flask)
-				disabled = true, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck19_1",
-				icon_data = {
-					source = "perk",
-					tree = 19,
-					card = 1
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-			delayed_damage = { --general delayed damage
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = true,
-				source = "perk",
-				text_id = "menu_kitr_buff_delayed_damage_title",
-				desc_id = "menu_kitr_buff_delayed_damage_desc",
-				icon_data = {
-					source = "perk",
-					tree = 19,
-					card = 1
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			calm = { --calm (4s countdown free delayed damage negation)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck19_5",
-				icon_data = {
-					source = "perk",
-					tree = 19,
-					card = 5
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--tag team
-			gas_dispenser = { --gas dispenser tagged/tagging status/duration?
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck20_1",
-				icon_data = {
-					source = "perk",
-					tree = 20,
-					card = 1
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--hacker
-			pocket_ecm_jammer = { --pocket ecm throwable (jammer mode)
-				disabled = false,
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "kitr_buff_hacker_pecm_jammer_title",
-				icon_data = {
-					source = "perk",
-					tree = 21,
-					card = 1
-				},
-				get_display_string = nil,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			pocket_ecm_feedback = { --pocket ecm throwable (feedback mode)
-				disabled = false,
-				show_timer = true,
-				show_value = true,
-				source = "perk",
-				text_id = "kitr_buff_hacker_pecm_feedback_title",
-				icon_data = {
-					source = "perk",
-					tree = 21,
-					card = 1
-				},
-				get_display_string = function(buff,value)
-					return string.format("x%i",value) -- number of ticks remaining
-				end,
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			kluge = { --kluge (dodge on kill while feedback active)
-				disabled = false, --not implemented
-				show_timer = true,
-				show_value = true, -- dodge amount
-				source = "perk",
-				text_id = "menu_deck21_7",
-				icon_data = {
-					source = "perk",
-					tree = 21,
-					card = 7
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-		--leech 
-			leech = { --leech throwable duration
-				disabled = true, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck22_1",
-				icon_data = {
-					source = "perk",
-					tree = 22,
-					card = 1
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			leech_grace = { -- temp invuln on healthgate duration
-				disabled = true, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck22_1",
-				icon_data = {
-					source = "perk",
-					tree = 22,
-					card = 1
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = false
-			},
-			leech_cooldown = {
-				disabled = true, --not implemented
-				show_timer = true,
-				show_value = false,
-				source = "perk",
-				text_id = "menu_deck22_1",
-				icon_data = {
-					source = "perk",
-					tree = 22,
-					card = 1
-				},
-				is_aced = false,
-				is_basic = false,
-				is_cooldown = true
-			},
-			copycat_primarykills = { -- show only when primary is out
-				disabled = false,
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "kitr_buff_copycat_primarykills_title",
-				icon_data = {
-					source = "perk",
-					tree = 23,
-					card = 1
-				}
-			},
-			copycat_secondarykills = { -- show only when secondary is out
-				disabled = false,
-				show_timer = false,
-				show_value = true,
-				source = "perk",
-				text_id = "kitr_buff_copycat_secondarykills_title",
-				icon_data = {
-					source = "perk",
-					tree = 23,
-					card = 1
+					text_id = "kitr_buff_copycat_secondarykills_title",
+					icon_data = {
+						source = "perk",
+						tree = 23,
+						card = 1
+					},
+					menu_options = {
+						enabled = true
+					}
 				}
 			}
 		}
-	}
-	
+		
 	--todo overhaul-specific tweakdata
-	if mode == "crackdown" then 
-	elseif mode == "resmod" then
 	end
 	
-	Hooks:Call("KineticTrackers_OnBuffDataLoaded",self.tweak_data)
+	for k,v in pairs(td) do 
+		self.tweak_data[k] = v
+	end
+	Hooks:Call("KineticTrackers_OnBuffDataLoaded",td)
+	for k,v in pairs(self:GenerateBuffSettings(self.tweak_data)) do 
+		self.buff_settings[k] = v
+	end
 end
 
 --*************************************************--
@@ -3869,11 +3457,26 @@ end
 function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
 	local settings = self.settings
 	local buff_tweakdata = self.tweak_data.buffs[buff_id]
-	local buff_display_setting = settings.buffs[buff_id]
+	local buff_display_setting = self.buff_settings[buff_id]
 	local icon_data = buff_tweakdata.icon_data
 	
-	local preview_data = self.buff_preview_data[buff_id] or self.buff_preview_data.generic
-	local color = Color(buff_display_setting.color)
+	local preview_data = buff_tweakdata.preview
+	local preview_value = preview_data and preview_data.value or 1
+	local preview_timer = preview_data and preview_data.timer or 7
+	
+	local value_color
+	if false then -- if value is full
+		value_color = Color(buff_display_setting.buff_color_value_full)
+	else
+		value_color = Color(buff_display_setting.buff_color_value_normal)
+	end
+	
+	local timer_color
+	if buff_tweakdata.is_cooldown then
+		timer_color = Color(buff_display_setting.buff_color_timer_cooldown)
+	else	
+		timer_color = Color(buff_display_setting.buff_color_timer_normal)
+	end
 	
 	local texture_data = {}
 	
@@ -3891,8 +3494,12 @@ function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
 	end
 	
 	local value_str = ""
-	if buff_tweakdata.get_display_string and preview_data.value then
-		value_str = buff_tweakdata.get_display_string(buff_tweakdata,preview_data.value)
+	if buff_tweakdata.show_value then
+		if buff_tweakdata.get_display_string then
+			value_str = buff_tweakdata.get_display_string(buff_tweakdata,preview_value)
+		else
+			value_str = tostring(preview_value)
+		end
 	end
 	
 	local gui_class = self:require("classes/KineticTrackerItemBase")
@@ -3902,25 +3509,25 @@ function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
 		secondary_text = "", -- timer text; set in update
 		buff_data = buff_tweakdata,
 		name_color = nil,
-		primary_color = color,
-		secondary_color = color,
+		primary_color = value_color,
+		secondary_color = Color(buff_display_setting.buff_color_timer_normal),
 		texture_data = texture_data
 	}
 	
 	local item = gui_class:new(buff_id,params,buff_preview_panel)
-	item._panel:set_position(_G.foo1 or 500,_G.foo2 or 200)
+	item._panel:set_position(500,360)
 	
 	if buff_tweakdata.show_timer then
 		local format_time_func = self._holder.get_format_time_func(buff_display_setting,settings)
 		
-		local duration = preview_data.end_t
+		local duration = preview_timer
 		if duration then
 			item._updater_id = "kinetictracker_updater_buff_preview_" .. buff_id
 			self:AddUpdater(updater_id,function(t,dt)
 				if alive(item._panel) then
 					duration = duration - dt
 					if duration < 0 then
-						duration = preview_data.end_t
+						duration = preview_timer
 					end
 					item:set_secondary_text(format_time_func(duration))
 				end
@@ -4046,217 +3653,7 @@ function KineticTrackerCore:UpdBuffPreviewColor(color)
 	end
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
---************************************************--
-		--hud animate functions
---************************************************--
-
-	-- hud animation manager --
-
-
-
-
-KineticTrackerCore:InitBuffTweakData()
-
---[[ deprecated
-
-function KineticTrackerCore:animate(object,func,done_cb,...)
-	return self._animator:animate(object,func,done_cb,...)
-end
-
-function KineticTrackerCore:animate_stop(object,do_cb,...)
-	return self._animator:animate_stop(object,do_cb,...)
-end
-
-function KineticTrackerCore:is_animating(object,...)
-	return self._animator:is_animating(object,...)
-end
-
-function KineticTrackerCore:AddBuff(...)
-	if self._holder then 
-		self._holder:AddBuff(...)
-	end
-end
-
-function KineticTrackerCore:RemoveBuff(...)
-	if self._holder then 
-		self._holder:RemoveBuff(...)
-	end
-end
-
-function KineticTrackerCore:GetBuffDisplaySettings(id)
-	
-	local buff_options = {
-		absorption = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		dodge_chance = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		crit_chance = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		damage_resistance = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		fixed_health_regen = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		health_regen = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 0
-		},
-		weapon_reload_speed = {
-			disabled = true,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 1
-		},
-		weapon_damage_bonus = {
-			disabled = false,
-			color = Color.white,
-			timer_enabled = false,
-			value_threshold = 1
-		},
-		
-		running_from_death_basic_swap_speed = {
-			disabled = true,
-			color = Color.white,
-			timer_enabled = true,
-			value_threshold = 0
-		},
-		running_from_death_aced = {
-			disabled = true,
-			color = Color.white,
-			timer_enabled = true,
-			value_threshold = 0
-		},
-		combat_medic_steelsight_mul = {
-			disabled = true,
-			color = Color.white,
-			timer_enabled = true,
-			value_threshold = 0
-		},
-		combat_medic_damage_mul = {
-			disabled = true,
-			color = Color.white,
-			timer_enabled = true,
-			value_threshold = 0
-		}
-		
-		
-	}
-	
-	
-	local default = {
-		value_threshold = false,
-		timer_enabled = true,
-		color = Color.white
-	} 
-	return self.settings.buffs[id] or buff_options[id] or default
-end
-
-function KineticTrackerCore:GetHUDPosition()
-	return self.settings.x,self.settings.y
-end
-
-function KineticTrackerCore:GetHUDVAlign()
-	return self.settings.valign
-end
-
-function KineticTrackerCore:GetHUDHAlign()
-	return self.settings.halign
-end
-
-function KineticTrackerCore:GetHUDVDirection()
-	return self.settings.vdir
-end
-
-function KineticTrackerCore:GetHUDHDirection()
-	return self.settings.hdir
-end
-
-function KineticTrackerCore:GetHUDWidth()
-	return self.settings.w
-end
-
-function KineticTrackerCore:GetHUDHeight()
-	return self.settings.h
-end
-
-
-function KineticTrackerCore.concat_tbl_with_keys(a,pairsep,setsep,...)
-	local s = ""
-	if type(a) == "table" then 
-		pairsep = pairsep or " = "
-		setsetp = setsetp or ", "
-		for k,v in pairs(a) do 
-			if s ~= "" then 
-				s = s .. setsetp
-			end
-			s = s .. tostring(k) .. pairsep .. tostring(v)
-		end
-	else
-		return AdvancedCrosshair.concat_tbl(a,sep,sep2,...)
-	end
-	return s
-end
-
-
+--[[
 function KineticTrackerCore:AddGeneralBuffs()
 	-- [ [
 	if self._holder then 
@@ -4271,17 +3668,4 @@ function KineticTrackerCore:AddGeneralBuffs()
 	end
 	-- ] ]
 end
---]]
-
-
-
-
-
-
-
-
-
-
-
-
 --]]

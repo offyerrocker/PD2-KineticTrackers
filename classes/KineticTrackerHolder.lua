@@ -22,9 +22,10 @@ KineticTrackerHolder._format_timer_funcs = {
 	-- flashbang = function
 }
 
-function KineticTrackerHolder:init(_settings,_tweak_data,panel)
+function KineticTrackerHolder:init(_settings,_buff_settings,_tweak_data,panel)
 	self._settings = _settings
 	self._tweak_data = _tweak_data
+	self._buff_settings = _buff_settings
 	--managers.hud:add_updator("kinetictracker_update",callback(self,self,"Update"))
 	
 	if _settings.buff_style == 2 then
@@ -64,7 +65,7 @@ function KineticTrackerHolder:AddBuff(id,params,skip_sort,peer_id)
 		return
 	end
 	
-	self._format_timer_funcs[id] = self._format_timer_funcs[id] or self.get_format_time_func(self._settings.buffs[id],self._settings)
+	self._format_timer_funcs[id] = self._format_timer_funcs[id] or self.get_format_time_func(self._buff_settings[id],self._settings)
 	
 	table.insert(self._buffs,priority,new_buff)
 	
@@ -87,7 +88,7 @@ function KineticTrackerHolder:_AddBuff(id,params,skip_sort,peer_id)
 	local sort_by_priority = settings.sort_by_priority
 	
 	local buff_tweakdata = id and self._tweak_data.buffs[id]
-	local buff_display_setting = settings.buffs[id]
+	local buff_display_setting = self._buff_settings[id]
 	
 	if buff_tweakdata.disabled then 
 		--don't keep track of hard-disabled buffs;
@@ -108,6 +109,20 @@ function KineticTrackerHolder:_AddBuff(id,params,skip_sort,peer_id)
 		priority = buff_tweakdata.priority or 1
 	else
 		priority = #self._buffs + 1
+	end
+	
+	local value_color
+	if false then -- if value is full
+		value_color = Color(buff_display_setting.buff_color_value_full)
+	else
+		value_color = Color(buff_display_setting.buff_color_value_normal)
+	end
+	
+	local timer_color
+	if buff_tweakdata.is_cooldown then
+		timer_color = Color(buff_display_setting.buff_color_timer_cooldown)
+	else	
+		timer_color = Color(buff_display_setting.buff_color_timer_normal)
 	end
 	
 	local texture_data = {}
@@ -138,6 +153,9 @@ function KineticTrackerHolder:_AddBuff(id,params,skip_sort,peer_id)
 		primary_text = value_str,
 		secondary_text = "", -- timer text
 		buff_data = buff_tweakdata,
+		name_color = nil,
+		primary_color = value_color,
+		secondary_color = Color(buff_display_setting.buff_color_timer_normal),
 		texture_data = texture_data
 	},self._panel)
 	
@@ -176,38 +194,39 @@ end
 
 function KineticTrackerHolder.get_format_time_func(buff_settings,global_settings)
 	
-	
-	
-	
 	local precision,precision_threshold
---	local td = self.tweak_data.buffs[buff_id]
---	local setting = self.settings[buff_id]
---	if not setting then return end
---	local precision = setting.precision
---	local precision = self.settings.timer_precision_places
---	local precision_threshold = 5
+	
+	if buff_settings.timer_inherit_global then
+		precision = KineticTrackerCore.TIMER_SETTING_PRECISION_LOOKUP[global_settings.timer_precision_places or 0] or 0
+		precision_threshold = global_settings.timer_precision_threshold or 0
+	else
+		precision = KineticTrackerCore.TIMER_SETTING_PRECISION_LOOKUP[buff_settings.timer_precision_places or 0] or 0
+		precision_threshold = buff_settings.timer_precision_threshold or 0
+	end
+	
+	local _seconds_format = ".%0" .. string.format("%i",precision) .."i"
+	local precision_pow = math.pow(10,precision)
 	local show_minutes = true
-	return function (seconds)
+	
+	return function(seconds)
 		local str = ""
 		local SECONDS_ABBREV_STR = "s"
 		local seconds_format = "%02d"
-		local minutes_format = "%01i"
+		local minutes_format = "%01i:"
 		if precision >= 1 and seconds < precision_threshold then 
 	--		seconds_format = "%02." .. string.format("%i",precision) .. "f"
-			seconds_format = seconds_format .. string.format(".%02i",(seconds - math.floor(seconds)) * math.pow(10,precision))
+			seconds_format = seconds_format .. string.format(_seconds_format,(seconds - math.floor(seconds)) * precision_pow)
 		end
 		
 		if show_minutes then 
 			local _minutes = math.min(seconds / 60,99)
 			local _seconds = seconds % 60
-			str = string.format(minutes_format .. ":" .. seconds_format,_minutes,_seconds)
+			str = string.format(minutes_format .. seconds_format,_minutes,_seconds)
 		else
 			str = string.format(seconds_format,seconds) .. SECONDS_ABBREV_STR
 		end
-		
 		return str
 	end
-	
 end
 
 function KineticTrackerHolder.get_specialization_icon_data_by_tier(spec,tier,no_fallback)
@@ -473,7 +492,7 @@ function KineticTrackerHolder:Update(t,dt)
 						-- feed visual progress
 						buff.gui_item:set_progress(time_rem / buff.total_t)
 					end
-					local time_format_func = self._format_timer_funcs[buff.id] or self.get_format_time_func(self._settings.buffs[buff.id],self._settings)
+					local time_format_func = self._format_timer_funcs[buff.id] or self.get_format_time_func(self._buff_settings.buffs[buff.id],self._settings)
 					buff.gui_item:set_secondary_text(time_format_func(time_rem))
 				end
 			end
