@@ -486,12 +486,14 @@ function KineticTrackerHolder:Update(t,dt)
 	for i,data in ipairs(self._updaters) do 
 		data.callback(t,dt)
 	end
+	local do_sort = false
 	for i=#self._buffs,1,-1 do 
 		local buff = self._buffs[i]
 		if buff.end_t then
 			if buff.end_t <= t then
 				table.remove(self._buffs,i)
 				self:_RemoveBuff(buff)
+				do_sort = true
 			else
 				if buff.gui_item then
 					local time_rem = math.max(buff.end_t - t,0)
@@ -505,6 +507,9 @@ function KineticTrackerHolder:Update(t,dt)
 				end
 			end
 		end
+	end
+	if do_sort then
+		self:SortBuffs()
 	end
 end
 
