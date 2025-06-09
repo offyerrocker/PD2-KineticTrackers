@@ -1170,7 +1170,7 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					get_display_string = function(buff,value)
-						return string.format("%i%%") --> eg 1%
+						return string.format("%i%%",value) --> eg 1%
 					end,
 					menu_options = {
 						enabled = true,
