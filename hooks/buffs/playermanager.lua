@@ -127,7 +127,6 @@ end)
 
 do return end
 
-Hooks:PostHook(PlayerManager,"check_skills","playermanager_checkskills_kinetictrackers",function(self,...)
 Hooks:PostHook(PlayerManager,"set_property","noblehud_set_property",function(self,name,value)
 	local buff_id = KineticTrackerCore:GetBuffIdFromProperty(name)
 	if buff_id then 
