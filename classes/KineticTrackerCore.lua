@@ -3530,9 +3530,15 @@ function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
 					if duration < 0 then
 						duration = preview_timer
 					end
-					local format_time_func = self._holder.get_format_time_func(buff_display_setting,settings)
 					-- bad practice for perf optimization but easier for updating preview with settings
 					
+					local flash_mode = buff_display_setting.timer_flashing_mode
+					local timer_flashing_threshold = buff_display_setting.timer_flashing_threshold or 0
+					if flash_mode == 2 or flash_mode == 1 and timer_flashing_threshold > duration then
+						item:set_secondary_text_flash(buff_display_setting.timer_flashing_speed * 90)
+					end
+					
+					local format_time_func = self._holder.get_format_time_func(buff_display_setting,settings)
 					item:set_secondary_text(format_time_func(duration))
 				end
 			end,true,true,true)
@@ -3555,6 +3561,16 @@ function KineticTrackerCore:RemoveAllBuffPreviews()
 	for k,item in pairs(self._preview_buffs) do 
 		item:destroy()
 		self._preview_buffs[k] = nil
+	end
+end
+
+function KineticTrackerCore:UpdBuffPreviewFlash(buff_id)
+	local item = self._preview_buffs[buff_id]
+	if item then
+		item:stop_animate(item._primary_label,"primary_flash")
+		item._primary_label:set_alpha(1)
+		item:stop_animate(item._secondary_label,"secondary_flash")
+		item._secondary_label:set_alpha(1)
 	end
 end
 

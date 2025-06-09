@@ -43,8 +43,8 @@ KineticTrackerItemBase.STYLE = {
 KineticTrackerItemBase.COLOR_PAYDAY_BLUE = Color(63/255,162/255,248/255)
 
 function KineticTrackerItemBase:init(id,params,parent_panel)
-	self._animthread_fade = nil
 	self._animthread_sort = nil
+	self._anim_threads = {}
 	
 	self._hidden = params.hidden or false
 	
@@ -223,7 +223,67 @@ function KineticTrackerItemBase:set_secondary_text_color(color)
 	self._secondary_label:set_color(color)
 end
 
--- todo anim flash func
+
+function KineticTrackerItemBase:animate(o,name,anim_func,...)
+	--self.stop_animate(o,name)
+	if not self._anim_threads[name] then
+		self._anim_threads[name] = o:animate(anim_func,callback(self,self,"stop_animate"),...)
+	end
+end
+
+function KineticTrackerItemBase:remove_anim_thread(id)
+	if self._anim_threads[id] then
+		self._anim_threads[id] = nil
+	end
+end
+
+function KineticTrackerItemBase:stop_animate(o,id)
+	if self._anim_threads[id] then
+		o:stop(self._anim_threads[id])
+		self._anim_threads[id] = nil
+	end
+end
+
+function KineticTrackerItemBase:set_primary_text_flash(frequency)
+	if not self._anim_threads.primary_flash then
+		self:animate(self._primary_label,"primary_flash",self._animate_flash,0.5,1,frequency,math.huge)
+	end
+end
+
+function KineticTrackerItemBase:set_secondary_text_flash(frequency)
+	self:animate(self._secondary_label,"secondary_flash",self._animate_flash,0.5,1,frequency,math.huge)
+end
+
+function KineticTrackerItemBase._animate_fade(o,done_cb,a1,a2,duration)
+	local da = a2 - a1
+	over(duration,function(lerp)
+		local n = math.sin(lerp * 90)
+		o:set_alpha(a1 + da * n * n)
+	end)
+	o:set_alpha(a2)
+	if done_cb then
+		done_cb(o)
+	end
+end
+
+function KineticTrackerItemBase._animate_flash(o,done_cb,a1,a2,frequency,duration)
+	duration = duration or 1
+	local t = 0
+	frequency = frequency or 180
+	a1 = a1 or 0
+	a2 = a2 or 1
+	local da = a2-a1
+	while t < duration do
+		local a = a1 + da * (math.cos(t*frequency)^2)
+		
+		o:set_alpha(a)
+		t = t - coroutine.yield()
+	end
+	o:set_alpha(a2)
+	if done_cb then
+		done_cb(o)
+	end
+end
 
 -- used for visual indication of timer progress
 function KineticTrackerItemBase:set_progress(n) -- float [0-1] progress of timer, in total
@@ -243,6 +303,9 @@ function KineticTrackerItemBase:set_hidden(state)
 end
 
 function KineticTrackerItemBase:destroy()
+	for k,v in pairs(self._anim_threads) do 
+		self._anim_threads[k] = nil
+	end
 	if alive(self._panel) then
 		self._panel:parent():remove(self._panel)
 	end

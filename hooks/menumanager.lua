@@ -362,6 +362,13 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						})
 					end
 					
+					table.insert(submenu_option_items,1,{
+						type = "divider",
+						id = menu_id .. "_divider_2",
+						size = 12,
+						menu_id = parent_menu_id
+					})
+					
 					--insert flashing multiplechoice
 					do 
 						local var_name = "timer_flashing_mode"
@@ -371,6 +378,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 							local item_value = tonumber(item:value())
 							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
+							
+							KineticTrackerCore:UpdBuffPreviewFlash(buff_name)
 						end
 						
 						table.insert(submenu_option_items,1,{
@@ -398,6 +407,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 							local item_value = tonumber(item:value())
 							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
+							
+							KineticTrackerCore:UpdBuffPreviewFlash(buff_name)
 						end
 						
 						table.insert(submenu_option_items,1,{
@@ -425,6 +436,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 							local item_value = tonumber(item:value())
 							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
 							KineticTrackerCore:SaveSettings()
+							
+							KineticTrackerCore:UpdBuffPreviewFlash(buff_name)
 						end
 						
 						table.insert(submenu_option_items,1,{

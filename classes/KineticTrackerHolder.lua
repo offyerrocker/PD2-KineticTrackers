@@ -168,15 +168,9 @@ function KineticTrackerHolder:_AddBuff(id,params,skip_sort,peer_id)
 	local num_buffs = #self._buffs+1
 	local x2,y2 = get_xy(num_buffs,num_buffs,w,h,panel_w,panel_h)
 	panel:set_position(x2,y2)
+	
 	-- fadein
-	gui_item._animthread_fade = panel:animate(function(o)
-		over(0.15,function(lerp)
-			local n = math.sin(lerp * 90)
-			o:set_alpha(n * n)
-		end)
-		o:set_alpha(1)
-		gui_item._animthread_fade = nil
-	end)
+	gui_item:animate(gui_item._panel,"panel_fadein",gui_item._animate_fade,0,1,0.15)
 	
 	local new_buff = {
 		id = id,
@@ -490,6 +484,7 @@ function KineticTrackerHolder:Update(t,dt)
 	for i=#self._buffs,1,-1 do 
 		local buff = self._buffs[i]
 		if buff.end_t then
+			local buff_setting = self._buff_settings[buff.id]
 			if buff.end_t <= t then
 				table.remove(self._buffs,i)
 				self:_RemoveBuff(buff)
@@ -497,12 +492,18 @@ function KineticTrackerHolder:Update(t,dt)
 			else
 				if buff.gui_item then
 					local time_rem = math.max(buff.end_t - t,0)
+
+					local flash_mode = buff_setting.timer_flashing_mode
+					local timer_flashing_threshold = buff_setting.timer_flashing_threshold or 0
+					if flash_mode == 2 or flash_mode == 1 and timer_flashing_threshold < time_rem then
+						buff.gui_item:set_primary_text_flash(buff_setting.timer_flashing_speed)
+					end
 					
 					if buff.total_t then
 						-- feed visual progress
 						buff.gui_item:set_progress(time_rem / buff.total_t)
 					end
-					local time_format_func = self._format_timer_funcs[buff.id] or self.get_format_time_func(self._buff_settings.buffs[buff.id],self._settings)
+					local time_format_func = self._format_timer_funcs[buff.id] or self.get_format_time_func(buff_setting,self._settings)
 					buff.gui_item:set_secondary_text(time_format_func(time_rem))
 				end
 			end
