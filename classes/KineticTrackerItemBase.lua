@@ -69,6 +69,7 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 		name = id,
 		w = style.panel_width,
 		h = style.panel_height,
+		visible = not self._hidden
 	})
 	self._panel = panel
 	local debug_rect = panel:rect({
@@ -246,7 +247,6 @@ function KineticTrackerItemBase:destroy()
 		self._panel:parent():remove(self._panel)
 	end
 end
-
 
 do return KineticTrackerItemBase end
 
