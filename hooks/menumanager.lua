@@ -423,7 +423,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 				end
 				
 				
-				
 				for i,submenu_option_data in ipairs(submenu_option_items) do 
 					submenu_option_data.priority = submenu_option_data.priority or i
 					local option_type = submenu_option_data.type
@@ -627,8 +626,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 		show_value = true,
 		menu_id = "menu_kitr_appearance"
 	})
-
-	-- ---------------------------- BUFF PREVIEWS
+	
 	MenuCallbackHandler.callback_kitr_remove_buff_preview = function(self)
 		KineticTrackerCore:RemovePreviewPanel()
 	end

@@ -113,15 +113,21 @@ Hooks:PostHook(PlayerManager,"use_messiah_charge","kt_pm_on_messiah_use",functio
 	managers.kinetictrackers:on_use_messiah_charge(self)
 end)
 
+-- total absorption, including (but not limited to) maniac 
+Hooks:PostHook(PlayerManager,"set_damage_absorption","kt_pm_on_set_damage_absorption",function(self,key,value)
+	local absorption = self:damage_absorption()
+	managers.kinetictrackers:on_set_damage_absorption(absorption)
+end)
 
 
+Hooks:PostHook(PlayerManager,"set_synced_cocaine_stacks","kt_pm_on_set_synced_cocaine_stacks",function(self,peer_id, amount, in_use, upgrade_level, power_level)
+	-- set own cocaine
+	-- set best cocaine
+end)
 
 do return end
 
 Hooks:PostHook(PlayerManager,"check_skills","playermanager_checkskills_kinetictrackers",function(self,...)
-	Hooks:Call("PlayerManager_OnCheckSkills",self,...)
-end)
-
 Hooks:PostHook(PlayerManager,"set_property","noblehud_set_property",function(self,name,value)
 	local buff_id = KineticTrackerCore:GetBuffIdFromProperty(name)
 	if buff_id then 

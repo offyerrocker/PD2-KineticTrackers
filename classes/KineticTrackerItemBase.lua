@@ -46,6 +46,8 @@ function KineticTrackerItemBase:init(id,params,parent_panel)
 	self._animthread_fade = nil
 	self._animthread_sort = nil
 	
+	self._hidden = params.hidden or false
+	
 	self:recreate_panel(id,params,parent_panel)
 end
 
@@ -67,7 +69,6 @@ function KineticTrackerItemBase:recreate_panel(id,params,parent_panel)
 		name = id,
 		w = style.panel_width,
 		h = style.panel_height,
-		visible = true
 	})
 	self._panel = panel
 	local debug_rect = panel:rect({
@@ -226,6 +227,18 @@ end
 -- used for visual indication of timer progress
 function KineticTrackerItemBase:set_progress(n) -- float [0-1] progress of timer, in total
 
+end
+
+function KineticTrackerItemBase:is_hidden()
+	return self._hidden
+end
+
+function KineticTrackerItemBase:set_hidden(state)
+	self._hidden = state
+	
+	if alive(self._panel) then
+		self._panel:set_visible(not state)
+	end
 end
 
 function KineticTrackerItemBase:destroy()

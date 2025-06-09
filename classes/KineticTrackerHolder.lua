@@ -187,7 +187,6 @@ function KineticTrackerHolder.get_format_time_func(buff_settings,global_settings
 --	local precision = self.settings.timer_precision_places
 --	local precision_threshold = 5
 	local show_minutes = true
-	
 	return function (seconds)
 		local str = ""
 		local SECONDS_ABBREV_STR = "s"

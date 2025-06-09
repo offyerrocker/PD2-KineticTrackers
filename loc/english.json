@@ -66,6 +66,12 @@
 	"menu_kitr_buff_option_generic_slider_timer_precision_title" : "Set Timer Minutes/Seconds Display",
 	"menu_kitr_buff_option_generic_slider_timer_precision_desc" : "Change how buff timers are displayed",
 	
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_title" : "Decimal Precision",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_desc" : "Choose how many decimal places of time to show",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_zero" : "0 (Integer)",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_one" : "1",
+	"menu_kitr_buff_option_generic_multiplechoice_timer_precision_two" : "2",
+	
 	"menu_kitr_timer_flashing_mode_below_threshold" : "When Below Threshold",
 	"menu_kitr_timer_flashing_mode_always" : "Always Flash",
 	"menu_kitr_timer_flashing_mode_never" : "Never Flash",

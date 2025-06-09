@@ -314,23 +314,23 @@ function KineticTrackerHandler:on_set_melee_dmg_multiplier(pm,value)
 	self._holder:AddBuff("bloodthirst_melee",{value=pm._melee_dmg_mul})
 end
 
--- should be posthooked to the coroutine
+-- may need to modify the coroutine for true accuracy
 function KineticTrackerHandler:on_expert_handling_event(pm,unit,attack_data)
 --[[
 	local attacker_unit = attack_data.attacker_unit
 	local variant = attack_data.variant
 
-	if attacker_unit == self:player_unit() and self:is_current_weapon_of_category("pistol") and variant == "bullet" and not self._coroutine_mgr:is_running(PlayerAction.ExpertHandling) then
-		local data = self:upgrade_value("pistol", "stacked_accuracy_bonus", nil)
+	if attacker_unit == pm:player_unit() and pm:is_current_weapon_of_category("pistol") and variant == "bullet" and not pm._coroutine_mgr:is_running(PlayerAction.ExpertHandling) then
+		local data = pm:upgrade_value("pistol", "stacked_accuracy_bonus", nil)
 
 		if data and type(data) ~= "number" then
-			NobleHUD:AddBuff("desperado",{end_t = Application:time() + data.max_time,value = data.max_stacks})
+			self._holder:AddBuff("desperado",{value = pm:get_property("desperado"),end_t = Application:time() + data.max_time,total_t = data.max_time})
 		end
 	end
 --]]
 end
 
--- should be posthooked to the coroutine
+-- may need to modify the coroutine for true accuracy
 function KineticTrackerHandler:on_enter_trigger_happy_event(pm,unit,attack_data)
 --[[
 	local attacker_unit = attack_data.attacker_unit
@@ -348,7 +348,7 @@ function KineticTrackerHandler:on_enter_trigger_happy_event(pm,unit,attack_data)
 --]]
 end
 
--- should be posthooked to the coroutine
+-- may need to modify the coroutine for true accuracy
 function KineticTrackerHandler:on_enter_shock_and_awe_event(pm)
 --[[
 	if NobleHUD:IsBuffEnabled("shock_and_awe_reload_multiplier") and not self._coroutine_mgr:is_running("automatic_faster_reload") then
@@ -404,6 +404,10 @@ function KineticTrackerHandler:on_use_messiah_charge(pm)
 	else
 		self._holder:RemoveBuff("messiah_charge")
 	end
+end
+
+function KineticTrackerHandler:on_set_damage_absorption(absorption)
+	
 end
 
 -- need to rethink how to measure biker stacks
