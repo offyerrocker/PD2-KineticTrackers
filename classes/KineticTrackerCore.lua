@@ -4162,7 +4162,7 @@ function KineticTrackerCore:CreateBuffPreview(buff_id,buff_preview_panel)
 					duration = duration - dt
 					if duration < 0 then
 						duration = preview_timer
-						item:stop_animate(item._secondary_text,"secondary_flash")
+						item:stop_animate(item._secondary_label,"secondary_flash")
 					end
 					-- bad practice for perf optimization but easier for updating preview with settings
 					
