@@ -13,6 +13,18 @@ end)
 Hooks:Add("MenuManagerSetupCustomMenus", "MenuManagerSetupCustomMenus_KineticTrackers", function(menu_manager, nodes)
 	KineticTrackerCore:Setup()
 	
+	local DEFAULT_SLIDER_PARAMS = {
+		min = 0,
+		max = 1,
+		step = 0.1
+	}
+	local DEFAULT_TIMER_SLIDER_PARAMS = {
+		min = 0,
+		max = 10,
+		step = 1
+	}
+	
+	
 	local mode = "vanilla"
 	if _G.deathvox then
 		-- planned
@@ -154,7 +166,7 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 				
 				local buff_display_setting = assert(KineticTrackerCore.buff_settings[buff_name],buff_name .. " does not exist")
 				
---				local default_buff_options = buff_data.menu_options or {}
+				local buff_menu_options = buff_data.menu_options or {} -- data used to generate each menu option
 				
 				local submenu_option_items = {}
 				
@@ -195,33 +207,152 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 					})
 				end
 
-				--insert value threshold check
-				if buff_data.display_format and buff_data.display_format ~= "" then 
-					--todo this needs a better indication of when there is a display value
-					local var_name = "value_threshold"
-					local option_id = menu_id .. "_value_threshold"
-					local callback_name = "callback_" .. option_id
-					MenuCallbackHandler[callback_name] = function(self,item)
-						local item_value = tonumber(item:value())
-						KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
-						KineticTrackerCore:SaveSettings()
+				if buff_data.show_value then
+				
+					--insert value threshold check
+					do
+						local var_name = "value_upper_threshold"
+						local buff_menu_option = buff_menu_options[var_name]
+						if buff_menu_option then
+							if type(buff_menu_option) ~= "table" then
+								buff_menu_option = DEFAULT_SLIDER_PARAMS
+							end
+							local option_id = menu_id .. "_value_threshold"
+							local callback_name = "callback_" .. option_id
+							MenuCallbackHandler[callback_name] = function(self,item)
+								local item_value = tonumber(item:value())
+								KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
+								KineticTrackerCore:SaveSettings()
+							end
+							
+							table.insert(submenu_option_items,1,{
+								type = "slider",
+								id = option_id,
+								title = "menu_kitr_buff_option_generic_slider_value_threshold_title",
+								desc = "menu_kitr_buff_option_generic_slider_value_threshold_desc",
+								callback = callback_name,
+								value = buff_display_setting[var_name],
+								min = buff_menu_option.min or 0,
+								max = buff_menu_option.max or 1,
+								step = buff_menu_option.step or 0.1,
+								show_value = true,
+								menu_id = parent_menu_id
+							})
+							--insert value display options?
+							--stack, mul, or other
+						end
 					end
 					
-					table.insert(submenu_option_items,1,{
-						type = "slider",
-						id = option_id,
-						title = "menu_kitr_buff_option_generic_slider_value_threshold_title",
-						desc = "menu_kitr_buff_option_generic_slider_value_threshold_desc",
-						callback = callback_name,
-						value = buff_display_setting[var_name],
-						min = -100,
-						max = 100,
-						step = 1,
-						show_value = true,
-						menu_id = parent_menu_id
-					})
-					--insert value display options?
-					--stack, mul, or other
+					do 
+						local var_name = "buff_color_value_normal"
+						local option_id = menu_id .. "_set_buff_color_value_normal"
+						local callback_name = "callback_" .. option_id
+						MenuCallbackHandler[callback_name] = function(self,item)
+							if ColorPicker then 
+								if KineticTrackerCore._colorpicker then 
+									KineticTrackerCore._colorpicker:Show({
+										color = Color(KineticTrackerCore.buff_settings[buff_name][var_name]),
+										done_callback = function(color,palettes,success)
+											if success then
+												KineticTrackerCore.buff_settings[buff_name][var_name] = ColorPicker.color_to_hex(color)
+												
+												KineticTrackerCore:SetPaletteCodes(palettes)
+											end
+										end,
+										changed_callback = function(color)
+											KineticTrackerCore:UpdBuffPreviewColor(color)
+										end
+									})
+								end
+							else
+								KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
+							end
+							KineticTrackerCore:SaveSettings()
+						end
+						
+						table.insert(submenu_option_items,1,{
+							type = "button",
+							id = option_id,
+							title = "menu_kitr_buff_option_generic_colorpicker_set_buff_value_normal_title",
+							desc = "menu_kitr_buff_option_generic_colorpicker_set_buff_value_normal_desc",
+							callback = callback_name,
+							menu_id = parent_menu_id
+						})
+					end
+						
+					-- buff value full
+					-- only show if there is an upper threshold setting (representing the fact that the value has a meaningful upper limit)
+					if buff_display_setting.value_threshold_upper then
+						local var_name = "buff_color_value_full"
+						local option_id = menu_id .. "_set_buff_color_value_full"
+						local callback_name = "callback_" .. option_id
+						MenuCallbackHandler[callback_name] = function(self,item)
+							if ColorPicker then 
+								if KineticTrackerCore._colorpicker then 
+									KineticTrackerCore._colorpicker:Show({
+										color = Color(KineticTrackerCore.buff_settings[buff_name][var_name]),
+										done_callback = function(color,palettes,success)
+											if success then
+												KineticTrackerCore.buff_settings[buff_name][var_name] = ColorPicker.color_to_hex(color)
+												
+												KineticTrackerCore:SetPaletteCodes(palettes)
+											end
+										end,
+										changed_callback = function(color)
+											KineticTrackerCore:UpdBuffPreviewColor(color)
+										end
+									})
+								end
+							else
+								KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
+							end
+							KineticTrackerCore:SaveSettings()
+						end
+						
+						table.insert(submenu_option_items,1,{
+							type = "button",
+							id = option_id,
+							title = "menu_kitr_buff_option_generic_colorpicker_set_buff_value_full_title",
+							desc = "menu_kitr_buff_option_generic_colorpicker_set_buff_value_full_desc",
+							callback = callback_name,
+							menu_id = parent_menu_id
+						})
+					end
+					
+					--insert value threshold check
+					do
+						--todo this needs a better indication of when there is a display value
+						local var_name = "value_threshold_lower"
+						local buff_menu_option = buff_menu_options[var_name]
+						if buff_menu_option then
+							if type(buff_menu_option) ~= "table" then
+								buff_menu_option = DEFAULT_SLIDER_PARAMS
+							end
+							local option_id = menu_id .. "_value_threshold_lower"
+							local callback_name = "callback_" .. option_id
+							MenuCallbackHandler[callback_name] = function(self,item)
+								local item_value = tonumber(item:value())
+								KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
+								KineticTrackerCore:SaveSettings()
+							end
+							
+							table.insert(submenu_option_items,1,{
+								type = "slider",
+								id = option_id,
+								title = "menu_kitr_buff_option_generic_slider_value_threshold_title",
+								desc = "menu_kitr_buff_option_generic_slider_value_threshold_desc",
+								callback = callback_name,
+								value = buff_display_setting[var_name],
+								min = buff_menu_option.min or 0,
+								max = buff_menu_option.max or 1,
+								step = buff_menu_option.step or 0.1,
+								show_value = true,
+								menu_id = parent_menu_id
+							})
+							--insert value display options?
+							--stack, mul, or other
+						end
+					end
 				end
 				
 				
@@ -401,99 +532,71 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 					--insert flashing threshold (flash when timer is below x seconds)
 					do 
 						local var_name = "timer_flashing_threshold"
-						local option_id = menu_id .. "_timer_flashing_threshold"
-						local callback_name = "callback_" .. option_id
-						MenuCallbackHandler[callback_name] = function(self,item)
-							local item_value = tonumber(item:value())
-							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
-							KineticTrackerCore:SaveSettings()
+						local buff_menu_option = buff_menu_options[var_name]
+						if buff_menu_option then
+							if type(buff_menu_option) ~= "table" then
+								buff_menu_option = DEFAULT_SLIDER_PARAMS
+							end
+							local option_id = menu_id .. "_timer_flashing_threshold"
+							local callback_name = "callback_" .. option_id
+							MenuCallbackHandler[callback_name] = function(self,item)
+								local item_value = tonumber(item:value())
+								KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
+								KineticTrackerCore:SaveSettings()
+								KineticTrackerCore:UpdBuffPreviewFlash(buff_name)
+							end
 							
-							KineticTrackerCore:UpdBuffPreviewFlash(buff_name)
+							table.insert(submenu_option_items,1,{
+								type = "slider",
+								id = option_id,
+								title = "menu_kitr_buff_option_generic_multiplechoice_timer_flashing_threshold_title",
+								desc = "menu_kitr_buff_option_generic_multiplechoice_timer_flashing_threshold_desc",
+								callback = callback_name,
+								value = buff_display_setting[var_name],
+								min = buff_menu_option.min or 0,
+								max = buff_menu_option.max or 1,
+								step = buff_menu_option.step or 1,
+								show_value = true,
+								menu_id = parent_menu_id
+							})
 						end
-						
-						table.insert(submenu_option_items,1,{
-							type = "slider",
-							id = option_id,
-							title = "menu_kitr_buff_option_generic_multiplechoice_timer_flashing_threshold_title",
-							desc = "menu_kitr_buff_option_generic_multiplechoice_timer_flashing_threshold_desc",
-							callback = callback_name,
-							value = buff_display_setting[var_name],
-							min = 0,
-							max = 10,
-							step = 1,
-							show_value = true,
-							menu_id = parent_menu_id
-						})
 					end
 					
 					
 					--insert flashing speed (cycle at which flashing pulses)
 					do 
 						local var_name = "timer_flashing_speed"
-						local option_id = menu_id .. "_timer_flashing_speed"
-						local callback_name = "callback_" .. option_id
-						MenuCallbackHandler[callback_name] = function(self,item)
-							local item_value = tonumber(item:value())
-							KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
-							KineticTrackerCore:SaveSettings()
-							
-							KineticTrackerCore:UpdBuffPreviewFlash(buff_name)
-						end
-						
-						table.insert(submenu_option_items,1,{
-							type = "slider",
-							id = option_id,
-							title = "menu_kitr_buff_option_generic_multiplechoice_timer_flashing_speed_title",
-							desc = "menu_kitr_buff_option_generic_multiplechoice_timer_flashing_speed_desc",
-							callback = callback_name,
-							value = buff_display_setting[var_name],
-							min = 0,
-							max = 10,
-							step = 1,
-							show_value = true,
-							menu_id = parent_menu_id
-						})
-					end
-				end
-				--[[
-				if buff_data.show_value or buff_data.show_timer then
-					do 
-						local option_id = menu_id .. "_set_color"
-						local callback_name = "callback_" .. option_id
-						MenuCallbackHandler[callback_name] = function(self,item)
-							if ColorPicker then 
-								if KineticTrackerCore._colorpicker then 
-									KineticTrackerCore._colorpicker:Show({
-										color = Color(KineticTrackerCore.buff_settings[buff_name].color),
-										done_callback = function(color,palettes,success)
-											if success then
-												KineticTrackerCore.buff_settings[buff_name].color = ColorPicker.color_to_hex(color)
-												
-												KineticTrackerCore:SetPaletteCodes(palettes)
-											end
-										end,
-										changed_callback = function(color)
-											KineticTrackerCore:UpdBuffPreviewColor(color)
-										end
-									})
-								end
-							else
-								KineticTrackerCore:callback_show_dialogue_missing_colorpicker()
+						local buff_menu_option = buff_menu_options[var_name]
+						if buff_menu_option then
+							if type(buff_menu_option) ~= "table" then
+								buff_menu_option = DEFAULT_TIMER_SLIDER_PARAMS
 							end
-							KineticTrackerCore:SaveSettings()
+							local option_id = menu_id .. "_timer_flashing_speed"
+							local callback_name = "callback_" .. option_id
+							MenuCallbackHandler[callback_name] = function(self,item)
+								local item_value = tonumber(item:value())
+								KineticTrackerCore.buff_settings[buff_name][var_name] = item_value
+								KineticTrackerCore:SaveSettings()
+								
+								KineticTrackerCore:UpdBuffPreviewFlash(buff_name)
+							end
+							
+							table.insert(submenu_option_items,1,{
+								type = "slider",
+								id = option_id,
+								title = "menu_kitr_buff_option_generic_multiplechoice_timer_flashing_speed_title",
+								desc = "menu_kitr_buff_option_generic_multiplechoice_timer_flashing_speed_desc",
+								callback = callback_name,
+								value = buff_display_setting[var_name],
+								min = buff_menu_option.min or 0,
+								max = buff_menu_option.max or 1,
+								step = buff_menu_option.step or 1,
+								show_value = true,
+								menu_id = parent_menu_id
+							})
 						end
-						
-						table.insert(submenu_option_items,1,{
-							type = "button",
-							id = option_id,
-							title = "menu_kitr_buff_option_generic_button_set_color_title",
-							desc = "menu_kitr_buff_option_generic_button_set_color_desc",
-							callback = callback_name,
-							menu_id = parent_menu_id
-						})
 					end
 				end
-				--]]
 				
 				for i,submenu_option_data in ipairs(submenu_option_items) do 
 					submenu_option_data.priority = submenu_option_data.priority or i
@@ -510,6 +613,8 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 						MenuHelper:AddDivider(submenu_option_data)
 					end
 				end
+				
+				
 			end
 		else
 			KineticTrackerCore:Log("ERROR: No menu data found for buff " .. tostring(buff_name) .. " during MenuManagerPopulateCustomMenus 1")
@@ -548,107 +653,6 @@ Hooks:Add("MenuManagerPopulateCustomMenus", "MenuManagerPopulateCustomMenus_Kine
 		end
 		--]]
 	end
-
-
-
-
-
---[[
-
-	MenuCallbackHandler.callback_kitr_set_hud_vdir = function(self,item)
-		local item_value = tonumber(item:value())
-		KineticTrackerCore.settings.vdir = item_value
-		if Application:paused() and KineticTrackerCore._holder then 
-			KineticTrackerCore._holder:Update(Application:time(),0)
-		end
-		KineticTrackerCore:SaveSettings()
-	end
-	
-	MenuHelper:AddMultipleChoice({
-		id = "menu_kitr_appearance_set_vdir",
-		title = "menu_kitr_appearance_set_vdir_title",
-		desc = "menu_kitr_appearance_set_vdir_desc",
-		callback = "callback_kitr_set_hud_vdir",
-		items = {
-			"menu_kitr_top",
-			"menu_kitr_bottom"
-		},
-		value = KineticTrackerCore.settings.vdir,
-		menu_id = "menu_kitr_appearance"
-	})
-	
-	MenuCallbackHandler.callback_kitr_set_hud_hdir = function(self,item)
-		local item_value = tonumber(item:value())
-		KineticTrackerCore.settings.hdir = item_value
-		if Application:paused() and KineticTrackerCore._holder then 
-			KineticTrackerCore._holder:Update(Application:time(),0)
-		end
-		KineticTrackerCore:SaveSettings()
-	end
-	
-	
-	MenuHelper:AddMultipleChoice({
-		id = "menu_kitr_appearance_set_hdir",
-		title = "menu_kitr_appearance_set_hdir_title",
-		desc = "menu_kitr_appearance_set_hdir_desc",
-		callback = "callback_kitr_set_hud_hdir",
-		items = {
-			"menu_kitr_left",
-			"menu_kitr_right"
-		},
-		value = KineticTrackerCore.settings.hdir,
-		menu_id = "menu_kitr_appearance"
-	})
-	
-	
-	MenuCallbackHandler.callback_set_hud_valign = function(self,item)
-		local item_value = tonumber(item:value())
-		KineticTrackerCore.settings.valign = item_value
-		if Application:paused() and KineticTrackerCore._holder then 
-			KineticTrackerCore._holder:Update(Application:time(),0)
-		end
-		KineticTrackerCore:SaveSettings()
-	end
-	
-	MenuHelper:AddMultipleChoice({
-		id = "menu_kitr_appearance_set_valign",
-		title = "menu_kitr_appearance_set_valign_title",
-		desc = "menu_kitr_appearance_set_valign_desc",
-		callback = "callback_set_hud_valign",
-		items = {
-			"menu_kitr_top",
-			"menu_kitr_bottom",
-			"menu_kitr_center"
-		},
-		value = KineticTrackerCore.settings.valign,
-		menu_id = "menu_kitr_appearance"
-	})
-	
-	MenuCallbackHandler.callback_set_hud_halign = function(self,item)
-		local item_value = tonumber(item:value())
-		KineticTrackerCore.settings.halign = item_value
-		if Application:paused() and KineticTrackerCore._holder then 
-			KineticTrackerCore._holder:Update(Application:time(),0)
-		end
-		KineticTrackerCore:SaveSettings()
-	end
-	
-	MenuHelper:AddMultipleChoice({
-		id = "menu_kitr_appearance_set_halign",
-		title = "menu_kitr_appearance_set_halign_title",
-		desc = "menu_kitr_appearance_set_halign_desc",
-		callback = "callback_set_hud_halign",
-		items = {
-			"menu_kitr_left",
-			"menu_kitr_right",
-			"menu_kitr_center"
-		},
-		value = KineticTrackerCore.settings.halign,
-		menu_id = "menu_kitr_appearance"
-	})
-	
-	--]]
-	
 
 	MenuCallbackHandler.callback_kitr_set_hud_x = function(self,item)
 		local item_value = tonumber(item:value())

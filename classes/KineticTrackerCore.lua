@@ -1,5 +1,40 @@
 --[[
-	todo: 
+	todo:
+	
+	preview flashes after resetting timer (doesn't stop flash animation)
+	
+	- hud edit mode
+	- tcd/resto buff tracking
+	- aced param on add buff, to add the aced symbol (eg second wind)
+	- mutually exclusive/overriding buffs
+		- eg. berserker aced over berserker
+	- duplicate buffs 
+		overdog from infil/socio
+		invuln from armorer/anarchist
+	- variable value upper threshold
+		ex president stored health (max is dependent on armor)
+		maniac stacks
+	- self-refreshing timers that should not be removed on expiry
+		anarchist blitzkrieg bop
+	- delayed damage 12s timer
+	- finish setting implementation
+	- finish buff implementation
+	- value thresholds
+	- value styling
+		x1
+		+1
+		1%
+		(see below)
+	- progress radial
+	
+	--]]
+	
+	
+	
+	
+	
+	
+	--[[
 	
 	#1 priority
 		straighten out data schema for displayed buff values
@@ -51,43 +86,11 @@
 	
 	
 	different display modes for buffs overall:
-		orientation
-			halign
-				* left
-				* center
-				* right
-			
-			halign order:
-				left to right
-				right to left
-			
-			valign 
-				* top
-				* center
-				* bottom
-			
-			valign order:
-				top to bottom
-				bottom to top
-			
 		style:
 			warframe (icons)
 			destiny (list)
 		transform:
 			size (scale mul)
-			position
-	
-	buff_setting = {
-		enabled = true,
-		value_threshold = 2,
-		timer_enabled = true,
-		timer_minutes_display = 1,--1 = minutes, 2 = seconds
-		timer_precision_places = 2,
-		timer_flashing_mode = 1,
-		timer_flashing_threshold = 3,
-		timer_flashing_speed = 1,
-		color = "ffd700"
-	}
 	
 	for updating values:
 		upd_func
@@ -136,11 +139,6 @@
 	
 	options:
 		- per-buff enable/disable
-		- color coding for:
-			- normal
-			- Max stacks/value
-			- cooldown
-	
 	
 	buffs to be added:
 		flashbang (timer)
@@ -305,7 +303,8 @@ KineticTrackerCore.default_settings = {
 	buff_color_timer_normal = "ffffff", -- timer label color default
 	buff_color_timer_cooldown = "ff5050", -- timer label color when the buff is a cooldown (or is a negative trait such as winters/flashbang)
 	
-	value_threshold = 0,
+	value_threshold_lower = 0, -- below this, do not show
+	value_threshold_upper = 0, -- above this, do not show
 	
 	timer_enabled = true,
 	timer_minutes_display = 1,
@@ -323,7 +322,8 @@ KineticTrackerCore.default_settings = {
 		TEMPLATE = {
 			enabled = true,
 			value_inherit_global = false, -- if false, use global settings instead
-			value_threshold = 0,
+			value_threshold_lower = 0,
+			value_threshold_upper = 0,
 			
 			timer_enabled = true,
 			timer_inherit_global = false, -- if true, disregard the buff-specific settings and use the global setting
@@ -350,59 +350,58 @@ KineticTrackerCore.buff_settings = {}
 
 function KineticTrackerCore:GenerateBuffSettings(buff_tweakdata)
 	local buff_settings = {}
-	for buff_id,buff_data in pairs(buff_tweakdata.buffs) do 
-		if not buff_data.disabled then
-			local setting = {}
-			buff_settings[buff_id] = setting
-			
-			local menu_defaults = buff_data.menu_options
-			if menu_defaults then
-			
-				setting.enabled = menu_defaults.enabled
-				
-				if buff_data.show_value then 
-					setting.value_threshold = menu_defaults.value_threshold or self.default_settings.value_threshold
-					setting.value_inherit_global = menu_defaults.value_inherit_global
-					setting.buff_color_value_normal = menu_defaults.buff_color_value_normal or self.default_settings.buff_color_value_normal
-					setting.buff_color_value_full = menu_defaults.buff_color_value_full or self.default_settings.buff_color_value_full
-				end
-				
-				if buff_data.show_timer then
-					setting.timer_enabled = menu_defaults.timer_enabled or self.default_settings.timer_enabled
-					setting.timer_inherit_global = (menu_defaults.timer_inherit_global == nil and true) or menu_defaults.timer_inherit_global
-					setting.timer_minutes_display = menu_defaults.timer_minutes_display or self.default_settings.timer_minutes_display
-					setting.timer_precision_places = menu_defaults.timer_precision_places or self.default_settings.timer_precision_places
-					setting.timer_precision_threshold = menu_defaults.timer_precision_threshold or self.default_settings.timer_precision_threshold
-					setting.timer_flashing_mode = menu_defaults.timer_flashing_mode or self.default_settings.timer_flashing_mode
-					setting.timer_flashing_threshold = menu_defaults.timer_flashing_threshold or self.default_settings.timer_flashing_threshold
-					setting.timer_flashing_speed = menu_defaults.timer_flashing_speed or self.default_settings.timer_flashing_speed
-					setting.buff_color_timer_normal = menu_defaults.buff_color_timer_normal or self.default_settings.buff_color_timer_normal
-					setting.buff_color_timer_cooldown = menu_defaults.buff_color_timer_cooldown or self.default_settings.buff_color_timer_cooldown
+	
+	local default_settings = self.default_settings
+	
+	local function set_default_value(buff_setting,buff_data,setting_name)
+		local td_default_options = buff_data.menu_options or {}
+		local option = td_default_options[setting_name]
+		if option ~= nil then
+			if type(option) == "table" then
+				if option.default_value ~= nil then
+					buff_setting[setting_name] = option.default_value
+					return
 				end
 			else
-				setting.enabled = true
+				buff_setting[setting_name] = option
+				return
+			end
+		end
+		buff_setting[setting_name] = default_settings[setting_name]
+		return
+	end
+	
+	for buff_id,buff_data in pairs(buff_tweakdata.buffs) do 
+		if not buff_data.disabled then
+			local buff_setting = {}
+			
+			set_default_value(buff_setting,buff_data,"enabled")
+			
+			if buff_data.show_value then 
+				buff_setting.value_inherit_global = buff_data.menu_options.value_inherit_global
+			
+				set_default_value(buff_setting,buff_data,"value_threshold_lower")
+				set_default_value(buff_setting,buff_data,"value_threshold_upper")
 				
-				if buff_data.show_value then 
-					setting.value_threshold = self.default_settings.value_threshold
-					setting.value_inherit_global = true
-					setting.buff_color_value_normal = self.default_settings.buff_color_value_normal
-					setting.buff_color_value_full = self.default_settings.buff_color_value_full
-				end
+				set_default_value(buff_setting,buff_data,"buff_color_value_normal")
+				set_default_value(buff_setting,buff_data,"buff_color_value_full")
 				
-				if buff_data.show_timer then
-					setting.timer_enabled = self.default_settings.timer_enabled or false
-					setting.timer_inherit_global = self.default_settings.timer_inherit_global or false
-					setting.timer_minutes_display = self.default_settings.timer_minutes_display
-					setting.timer_precision_places = self.default_settings.timer_precision_places
-					setting.timer_precision_threshold = self.default_settings.timer_precision_threshold
-					setting.timer_flashing_mode = self.default_settings.timer_flashing_mode
-					setting.timer_flashing_threshold = self.default_settings.timer_flashing_threshold
-					setting.timer_flashing_speed = self.default_settings.timer_flashing_speed
-					setting.buff_color_timer_normal = self.default_settings.buff_color_timer_normal
-					setting.buff_color_timer_cooldown = self.default_settings.buff_color_timer_cooldown
-				end
 			end
 			
+			if buff_data.show_timer then
+				set_default_value(buff_setting,buff_data,"timer_enabled")
+				buff_setting.timer_inherit_global = (buff_data.menu_options.timer_inherit_global == nil and true) or buff_data.menu_options.timer_inherit_global
+				set_default_value(buff_setting,buff_data,"timer_minutes_display")
+				set_default_value(buff_setting,buff_data,"timer_precision_places")
+				set_default_value(buff_setting,buff_data,"timer_precision_threshold")
+				set_default_value(buff_setting,buff_data,"timer_flashing_mode")
+				set_default_value(buff_setting,buff_data,"timer_flashing_threshold")
+				set_default_value(buff_setting,buff_data,"timer_flashing_speed")
+				set_default_value(buff_setting,buff_data,"buff_color_timer_normal")
+				set_default_value(buff_setting,buff_data,"buff_color_timer_cooldown")
+			end
+			
+			buff_settings[buff_id] = buff_setting
 		end
 	end
 	return buff_settings
@@ -833,17 +832,6 @@ KineticTrackerCore.menu_data = {
 }
 
 KineticTrackerCore._preview_buffs = {}
-KineticTrackerCore.buff_preview_data = {
-	generic = {
-		value = 3,
-		end_t = 10
-	},
-	flashbang = {
-		value = true,
-		end_t = 5
-	}
-}
-
 
 -------------------------------------------------------------
 --*********************    Utils   *********************--
@@ -1093,7 +1081,8 @@ function KineticTrackerCore:LoadBuffData(mode)
 					default_settings = { -- this is only used for setting generation
 					-- this section is only used if show_timer is true
 						enabled = true,
-						value_threshold = 0,
+						value_threshold_lower = 0, -- at or below this value, do not show the buff
+						value_threshold_upper = 0, -- at or above this value, use the "full" color
 						buff_color_value_normal = "ffffff", -- default value color
 						buff_color_value_full = "ffd700", -- value color if value is above "max" threshold
 						buff_color_timer_normal = "ffffff", -- default timer color
@@ -1117,15 +1106,6 @@ function KineticTrackerCore:LoadBuffData(mode)
 					}
 				},
 				
-				
-				
-				
-					menu_options = {
-						min_value = 0, --used for sliders
-						max_value = 10, --used for sliders
-						step = 1, --used for sliders
-						default_value = 1, --used for all menu option types
-					},
 		--]]
 				--misc "fake" statuses
 				flashbang = {
@@ -1145,7 +1125,7 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_cooldown = false,
 					menu_options = {
 						enabled = true,
-						timer_inherit_global = false,
+						timer_inherit_global = true,
 						timer_precision_places = 2,
 						timer_flashing_mode = 2
 					},
@@ -1176,7 +1156,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 						enabled = true,
 						value_inherit_global = true,
 						buff_color_value_normal = "ff7777",
-						buff_color_value_full = "ff5050"
+						buff_color_value_full = "ff5050",
+						value_threshold_upper = {
+							default_value = 0.5,
+							min = 0,
+							max = 0.5,
+							step = 0.1
+						},
+						value_threshold_upper = {
+							default_value = 0.5,
+							min = 0,
+							max = 0.5,
+							step = 0.1
+						}
 					},
 					preview = {
 						value = 1
@@ -1209,7 +1201,17 @@ function KineticTrackerCore:LoadBuffData(mode)
 						enabled = true,
 						value_inherit_global = false,
 						buff_color_value_normal = "76d2e2",
-						buff_color_value_full = "3cd2ed"
+						buff_color_value_full = "3cd2ed",
+						value_threshold_lower = {
+							min = 0,
+							max = 0.5,
+							step = 0.1
+						},
+						value_threshold_upper = {
+							min = 0,
+							max = 0.5,
+							step = 0.1
+						}
 					},
 					preview = {
 						value = 100
@@ -1245,7 +1247,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 						enabled = true,
 						value_inherit_global = false,
 						buff_color_value_normal = "76d2e2",
-						buff_color_value_full = "3cd2ed"
+						buff_color_value_full = "3cd2ed",
+						value_threshold_lower = {
+							default_value = 0,
+							min = -1,
+							max = 1,
+							step = 0.1
+						},
+						value_threshold_upper = {
+							default_value = 1,
+							min = -1,
+							max = 1,
+							step = 0.1
+						}
 					},
 					preview = {
 						value = 0.4
@@ -1276,7 +1290,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 1,
+							step = 0.1
+						},
+						value_threshold_upper = {
+							default_value = 1,
+							min = 0,
+							max = 1,
+							step = 0.1
+						}
 					},
 					preview = {
 						value = 0.4
@@ -1383,7 +1409,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 10,
+							step = 1
+						}
 					}
 				},
 				
@@ -1555,6 +1587,7 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_cooldown = false,
 					menu_options = {
 						enabled = true
+						-- has a value but don't add a threshold, as it's secondary/tied to the timer
 					}
 				},
 			
@@ -1579,7 +1612,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = false
+						enabled = false,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 1,
+							step = 0.1
+						}
 					}
 				},
 				combat_medic_damage_mul = {
@@ -1642,7 +1681,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = false
+						enabled = false,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 1,
+							step = 0.1
+						}
 					}
 				},
 				painkillers = { --painkillers (damage reduction for teammates you revive)
@@ -1684,7 +1729,7 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = false
+						enabled = true
 					}
 				},
 				inspire_basic_cooldown = {
@@ -1702,7 +1747,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 10,
+							step = 1
+						}
 					}
 				},
 				inspire_aced_cooldown = { --value is 1, which is evidently meaningless, so don't bother showing it, just the timer
@@ -1721,10 +1772,16 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 20,
+							step = 1
+						}
 					}
 				},
-				forced_friendship = { --forced friendship (nearby civs give damage absorption)
+				forced_friendship = { --forced friendship aced (nearby civs give damage absorption)
 					disabled = false, --not implemented
 					show_timer = false,
 					show_value = true,
@@ -1742,7 +1799,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = false
+						enabled = false,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 4,
+							step = 0.5
+						},
+						value_threshold_upper = {
+							default_value = 4,
+							min = 0,
+							max = 4,
+							step = 0.5
+						}
 					}
 				},
 				partners_in_crime = { --partners in crime (extra max health while you have a convert)
@@ -1817,9 +1886,9 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false
 				},
-				ammo_efficiency = { --ammo efficiency (consecutive headshots refund ammo); show stacks
+				ammo_efficiency = { --ammo efficiency (consecutive headshots refund ammo); show stacks and timer
 					disabled = false, --not implemented; requires "guessing" or coroutine override
-					show_timer = false,
+					show_timer = true,
 					show_value = true,
 					source = "skill",
 					text_id = "menu_single_shot_ammo_return_beta",
@@ -1835,7 +1904,25 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 2,
+							step = 1
+						},
+						value_threshold_upper = {
+							default_value = 2,
+							min = 0,
+							max = 2,
+							step = 1
+						},
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 6,
+							step = 1
+						}
 					}
 				},
 				aggressive_reload = { --aggressive reload aced (killing headshot reduces reload speed)
@@ -1857,7 +1944,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 4,
+							min = 0,
+							max = 4,
+							step = 1
+						}
 					}
 				},
 				
@@ -1880,7 +1973,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 7,
+							step = 1
+						}
 					}
 				},
 				underdog_aced = { --underdog (basic: damage bonus when targeted by enemies; aced: damage resist when targeted by enemies)
@@ -1901,11 +2000,17 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 7,
+							step = 1
+						}
 					}
 				},
 				far_away = { --far away basic (accuracy bonus while ads with shotguns)
-					disabled = false, --not implemented
+					disabled = true, --not implemented
 					show_timer = false,
 					show_value = true,
 					source = "skill",
@@ -1943,7 +2048,7 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false
 				},
-				overkill = { --overkill (basic: damage bonus for saw/shotgun on kill with saw/shotgun; aced: damage bonus for all ranged weapons on kill with saw/shotgun)
+				overkill = { --overkill (basic: damage bonus for saw/shotgun on kill with saw/shotgun)
 					disabled = false, 
 					show_timer = true,
 					show_value = true,
@@ -1961,13 +2066,46 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 20,
+							step = 1
+						}
+					}
+				},
+				overkill_aced = { --overkill (aced: damage bonus for all ranged weapons on kill with saw/shotgun)
+					disabled = true, 
+					show_timer = true,
+					show_value = true,
+					source = "skill",
+					text_id = "menu_overkill_beta",
+					icon_data = {
+						source = "skill",
+						skill_id = "overkill",
+						tree = 2
+					},
+					get_display_string = function(buff,value)
+						return string.format("%0.2f%%",value)
+					end,
+					is_aced = true,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 20,
+							step = 1
+						}
 					}
 				},
 				die_hard = { --die hard basic (damage resist while interacting)
 					disabled = false, --not implemented; requires manual checking via upd_func
 					show_timer = false,
-					show_value = true,
+					show_value = false,
 					source = "skill",
 					text_id = "menu_show_of_force_beta",
 					icon_data = {
@@ -2000,7 +2138,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 2,
+							min = 0,
+							max = 2,
+							step = 1
+						}
 					}
 				},
 				scavenger = { --scavenger aced: extra ammo box every 6 kills
@@ -2021,7 +2165,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 5,
+							step = 1
+						}
 					}
 				},
 				bullet_storm = { --bulletstorm (temp don't consume ammo after using your ammo bags)
@@ -2039,7 +2189,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 20,
+							step = 1
+						}
 					}
 				},
 				fully_loaded = { --fully loaded aced (escalating throwable restore chance from ammo boxes)
@@ -2060,7 +2216,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0.05,
+							max = 1,
+							step = 0.1
+						},
+						value_threshold_upper = {
+							default_value = 1,
+							min = 0.05,
+							max = 1,
+							step = 0.1
+						}
 					}
 				},
 
@@ -2146,7 +2314,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0.4,
+							max = 1,
+							step = 1
+						},
+						value_threshold_upper = {
+							default_value = 1,
+							min = 0.4,
+							max = 1,
+							step = 1
+						}
 					}
 				},
 				
@@ -2166,7 +2346,14 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_mode = 3,
+						timer_flashing_threshold = {
+							default_value = 3.5,
+							min = 0,
+							max = 3.5,
+							step = 1
+						}
 					}
 				},
 				second_chances = { --nimble basic (camera loop)
@@ -2184,7 +2371,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 25,
+							step = 1
+						}
 					}
 				},
 				dire_chance = { --dire need (stagger chance when armor is broken)
@@ -2205,10 +2398,16 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 6,
+							step = 1
+						}
 					}
 				},
-				second_wind = { --second wind (speed bonus on armor break)
+				second_wind = { --second wind (speed bonus on armor break); aced from other players should also use this
 					disabled = false,
 					show_timer = true,
 					show_value = true,
@@ -2226,11 +2425,17 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 5,
+							step = 1
+						}
 					}
 				},
 				second_wind_aced = {
-					disabled = false,
+					disabled = true,
 					show_timer = false,
 					show_value = false,
 					source = "skill",
@@ -2269,12 +2474,18 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 18,
+							step = 1
+						}
 					}
 				},
 			
 			--fugitive
-				desperado = { --desperado (stacking accuracy bonus per hit for pistols)
+				desperado = { --desperado basic (stacking accuracy bonus per hit for pistols)
 					disabled = false,
 					show_timer = true,
 					show_value = true,
@@ -2292,7 +2503,25 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 0.4,
+							step = 1
+						},
+						value_threshold_upper = {
+							default_value = 0.4,
+							min = 0,
+							max = 0.4,
+							step = 0.1
+						},
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 10,
+							step = 1
+						}
 					}
 				},
 				trigger_happy = { --trigger happy (stacking damage bonus per hit for pistols)
@@ -2313,7 +2542,14 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_mode = 2,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 4,
+							step = 1
+						}
 					}
 				},
 				running_from_death_basic_reload_speed = { --running_from_death (basic: reload/swap speed bonus after being revived; aced: move speed bonus after being revived)
@@ -2334,11 +2570,17 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = false
+						enabled = false,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 10,
+							step = 1
+						}
 					}
 				},
 				running_from_death_basic_swap_speed = {
-					disabled = false, --redundant; disabled
+					disabled = true, --redundant; disabled
 					show_timer = true,
 					show_value = true,
 					source = "skill",
@@ -2355,7 +2597,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = false
+						enabled = false,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 10,
+							step = 1
+						}
 					}
 				},
 				running_from_death_aced = {
@@ -2376,7 +2624,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = false
+						enabled = false,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 10,
+							step = 1
+						}
 					}
 				},
 				up_you_go = { --up you go basic: damage resistance after being revived
@@ -2397,7 +2651,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 15,
+							step = 1
+						}
 					}
 				},
 				swan_song = { --swan song: temporarily continue fighting after reaching 0 health
@@ -2418,7 +2678,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 6,
+							step = 1
+						}
 					}
 				},
 				messiah = { --messiah: kill an enemy to self-revive
@@ -2457,7 +2723,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 16,
+							step = 1
+						},
+						value_threshold_upper = {
+							default_value = 16,
+							min = 0,
+							max = 16,
+							step = 1
+						}
 					}
 				},
 				bloodthirst_aced = { --bloodthirst aced: reload speed bonus on melee kill
@@ -2478,7 +2756,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 10,
+							step = 1
+						}
 					}
 				},
 				counterstrike = { --counterstrike (counter melee/cloaker kick)
@@ -2517,7 +2801,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = true,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 0.5,
+							step = 0.1
+						},
+						value_threshold_upper = {
+							default_value = 1,
+							min = 0,
+							max = 0.5,
+							step = 0.1
+						}
 					}
 				},
 				berserker_aced = { --berserker (ranged damage bonus inverse to health ratio)
@@ -2538,7 +2834,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 1,
+							step = 1
+						},
+						value_threshold_upper = {
+							default_value = 1,
+							min = 0,
+							max = 1,
+							step = 1
+						}
 					}
 				},
 		--perkdecks
@@ -2583,12 +2891,24 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 4, -- count stacks
+							step = 1
+						},
+						value_threshold_upper = {
+							default_value = 4,
+							min = 0,
+							max = 4,
+							step = 1
+						}
 					}
 				},
 			--muscle
 				meat_shield = { --meat shield (increased threat when close to allies)
-					disabled = false, --not implemented
+					disabled = true, --not implemented
 					show_timer = false,
 					show_value = true,
 					source = "perk",
@@ -2627,7 +2947,14 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_mode = 2,
+						timer_flashing_threshold = {
+							default_value = 2,
+							min = 0,
+							max = 2,
+							step = 1
+						}
 					}
 				},
 				reinforced_armor_cooldown = { --(temp invuln cooldown)
@@ -2645,12 +2972,18 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 15,
+							step = 1
+						}
 					}
 				},
 			--rogue
 				elusive = { --elusive (decreased threat when close to allies)
-					disabled = false, --not implemented
+					disabled = true, --not implemented
 					show_timer = false,
 					show_value = true,
 					source = "perk",
@@ -2683,7 +3016,14 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_mode = 3,
+						timer_flashing_threshold = {
+							default_value = 1.5,
+							min = 0,
+							max = 1.5,
+							step = 1
+						}
 					}
 				},
 			--burglar
@@ -2706,7 +3046,7 @@ function KineticTrackerCore:LoadBuffData(mode)
 					}
 				},
 				breath_of_fresh_air = { --breath of fresh air (increased armor recovery rate when standing still)
-					disabled = false, --not implemented
+					disabled = true, --not implemented
 					show_timer = false,
 					show_value = true,
 					source = "perk",
@@ -2739,7 +3079,14 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_precision_threshold = 5,
+						timer_flashing_threshold = {
+							default_value = 1,
+							min = 0,
+							max = 1,
+							step = 0.1
+						}
 					}
 				},
 				basic_close_combat = { --basic close combat (damage resist when within medium range of enemy)
@@ -2775,7 +3122,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 10,
+							step = 1
+						}
 					}
 				},
 			--sociopath
@@ -2795,7 +3148,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 1,
+							min = 0,
+							max = 1,
+							step = 0.1
+						}
 					}
 				},
 				clean_hit = { --clean hit (health on melee kill cooldown)
@@ -2813,7 +3172,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 1,
+							min = 0,
+							max = 1,
+							step = 0.1
+						}
 					}
 				},
 				overdose = { --overdose (armor gate on medium range kill cooldown)
@@ -2831,11 +3196,17 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 1,
+							min = 0,
+							max = 1,
+							step = 0.1
+						}
 					}
 				},
 			--gambler
-				ammo_box_pickup_health = { --medical supplies (health on ammo box pickup cooldown)
+				ammo_box_pickup_health = { --medical supplies (health on ammo box pickup cooldown); should also show 20% bonus lowest health status
 					disabled = false,
 					show_timer = true,
 					show_value = false,
@@ -2850,7 +3221,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 3,
+							step = 1
+						}
 					}
 				},
 				ammo_box_pickup_share = { --ammo give out (ammo box team share cooldown)
@@ -2868,14 +3245,20 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 5,
+							step = 1
+						}
 					}
 				},
 			--grinder
-				histamine = { --histamine (current health on damage stacks/current duration)
+				histamine = { --histamine (current health on damage stacks/current duration); should show num stacks
 					disabled = false, --not implemented
-					show_timer = true,  
-					show_value = false,
+					show_timer = true,
+					show_value = true,
 					source = "perk",
 					text_id = "menu_deck11_1",
 					icon_data = {
@@ -2887,7 +3270,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 3,
+							step = 1
+						},
+						value_threshold_upper = {
+							default_value = 2,
+							min = 0,
+							max = 2,
+							step = 1
+						}
 					}
 				},
 				histamine_cooldown = { --histamine (health on damage stacks cooldown)
@@ -2905,7 +3300,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 1.5,
+							step = 1
+						}
 					}
 				},
 			--yakuza
@@ -2924,11 +3325,23 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = false,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 0.2,
+							step = 0.01
+						},
+						value_threshold_upper = {
+							default_value = 0.2,
+							min = 0,
+							max = 0.2,
+							step = 0.01
+						}
 					}
 				},
 				hebi_irezumi = { --hebi irezumi (move speed inverse to health)
-					disabled = false, --not implemented
+					disabled = false, --not implemented; redundant
 					show_timer = false,
 					show_value = true,
 					source = "perk",
@@ -2942,7 +3355,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 0.2,
+							step = 0.01
+						},
+						value_threshold_upper = {
+							default_value = 0.2,
+							min = 0,
+							max = 0.2,
+							step = 0.01
+						}
 					}
 				},
 			--ex-president
@@ -2961,7 +3386,21 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 100,
+							step = 1
+						}
+						--[[
+						,value_threshold_upper = {
+							default_value = 10,
+							min = 0,
+							max = 10,
+							step = 1
+						}
+						--]]
 					}
 				},
 			--maniac
@@ -2969,6 +3408,43 @@ function KineticTrackerCore:LoadBuffData(mode)
 					disabled = false, --not implemented
 					show_timer = true,
 					show_value = true,
+					source = "perk",
+					text_id = "menu_deck14_1",
+					icon_data = {
+						source = "perk",
+						tree = 14,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true,
+						timer_flashing_mode = 3,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 8,
+							step = 1
+						},
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 600,
+							step = 1
+						},
+						value_threshold_upper = {
+							default_value = 600,
+							min = 0,
+							max = 600,
+							step = 1
+						}
+					}
+				},
+				excitement_conversion = { -- interval of conversion for damage dealt to stacks
+					disabled = true, --not implemented
+					show_timer = true,
+					show_value = false,
 					source = "perk",
 					text_id = "menu_deck14_1",
 					icon_data = {
@@ -2999,7 +3475,14 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_mode = 3,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 3, --todo
+							step = 1
+						}
 					}
 				},
 				lust_for_life = { --lust for life (armor on damage cooldown)
@@ -3027,10 +3510,10 @@ function KineticTrackerCore:LoadBuffData(mode)
 					show_value = true,
 					source = "perk",
 					text_id = "menu_deck16_1",
+					--[[
 					upd_func = function(t,dt,values,display_setting,buff_data)
 						
 					end,
-					--[[
 					format_values_func = function(values,display_setting)
 						return string.format("x%i",#values)
 					end,
@@ -3047,7 +3530,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 1.5,
+							min = 0,
+							max = 1.5,
+							step = 1
+						}
 					}
 				},
 			--kingpin
@@ -3066,7 +3555,14 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_mode = 2,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 6,
+							step = 1
+						}
 					}
 				},
 			--sicario
@@ -3121,7 +3617,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = true,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 4,
+							step = 1
+						}
 					}
 				},
 			--stoic
@@ -3159,7 +3661,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 12,
+							step = 1
+						}
 					}
 				},
 				calm = { --calm (4s countdown free delayed damage negation)
@@ -3177,7 +3685,14 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_mode = 3,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 4,
+							step = 1
+						}
 					}
 				},
 			--tag team
@@ -3196,7 +3711,61 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 15,
+							step = 1
+						}
+					}
+				},
+				gas_dispenser_tagged = { --gas dispenser tagged by other player
+					disabled = true, --not implemented
+					show_timer = true,
+					show_value = false,
+					source = "perk",
+					text_id = "menu_deck20_1",
+					icon_data = {
+						source = "perk",
+						tree = 20,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = false,
+					menu_options = {
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 15,
+							step = 1
+						}
+					}
+				},
+				gas_dispenser_cooldown = { --gas dispenser throwable cooldown
+					disabled = true, --not implemented
+					show_timer = true,
+					show_value = false,
+					source = "perk",
+					text_id = "menu_deck20_1",
+					icon_data = {
+						source = "perk",
+						tree = 20,
+						card = 1
+					},
+					is_aced = false,
+					is_basic = false,
+					is_cooldown = true,
+					menu_options = {
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 12,
+							step = 1
+						}
 					}
 				},
 			--hacker
@@ -3216,7 +3785,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 6,
+							step = 1
+						}
 					}
 				},
 				pocket_ecm_feedback = { --pocket ecm throwable (feedback mode)
@@ -3237,7 +3812,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 6,
+							step = 1
+						}
 					}
 				},
 				kluge = { --kluge (dodge on kill while feedback active)
@@ -3255,7 +3836,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 30,
+							step = 1
+						}
 					}
 				},
 			--leech 
@@ -3272,10 +3859,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 					},
 					is_aced = false,
 					is_basic = false,
-					is_cooldown = false
+					is_cooldown = false,
+					menu_options = {
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 6,
+							step = 1
+						}
+					}
 				},
 				leech_grace = { -- temp invuln on healthgate duration
-					disabled = true, --not implemented
+					disabled = false, --not implemented
 					show_timer = true,
 					show_value = false,
 					source = "perk",
@@ -3289,7 +3885,13 @@ function KineticTrackerCore:LoadBuffData(mode)
 					is_basic = false,
 					is_cooldown = false,
 					menu_options = {
-						enabled = true
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 1,
+							min = 0,
+							max = 1,
+							step = 0.1
+						}
 					}
 				},
 				leech_cooldown = {
@@ -3305,7 +3907,16 @@ function KineticTrackerCore:LoadBuffData(mode)
 					},
 					is_aced = false,
 					is_basic = false,
-					is_cooldown = true
+					is_cooldown = true,
+					menu_options = {
+						enabled = true,
+						timer_flashing_threshold = {
+							default_value = 3,
+							min = 0,
+							max = 30,
+							step = 1
+						}
+					}
 				},
 				copycat_primarykills = { -- show only when primary is out
 					disabled = false,
@@ -3319,7 +3930,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 						card = 1
 					},
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 9,
+							step = 1
+						},
+						value_threshold_upper = {
+							default_value = 9,
+							min = 0,
+							max = 9,
+							step = 1
+						}
 					}
 				},
 				copycat_secondarykills = { -- show only when secondary is out
@@ -3334,7 +3957,19 @@ function KineticTrackerCore:LoadBuffData(mode)
 						card = 1
 					},
 					menu_options = {
-						enabled = true
+						enabled = true,
+						value_threshold_lower = {
+							default_value = 0,
+							min = 0,
+							max = 9,
+							step = 1
+						},
+						value_threshold_upper = {
+							default_value = 9,
+							min = 0,
+							max = 9,
+							step = 1
+						}
 					}
 				}
 			}
